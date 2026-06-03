@@ -53,6 +53,11 @@ interface IAgentRequesterHandler {
     ) external;
 }
 
+/// @notice Interface for interacting with the MarketFactory
+interface IMarketFactory {
+    function createMarket(string memory question, uint256 strikePrice, uint256 deadline) external payable;
+}
+
 /// @title PythiaOracle
 /// @notice Autonomous prediction market oracle for Somnia testnet
 contract PythiaOracle is IAgentRequesterHandler {
@@ -61,6 +66,9 @@ contract PythiaOracle is IAgentRequesterHandler {
 
     /// @notice The owner (deployer) of the contract
     address public owner;
+
+    /// @notice The MarketFactory address
+    address public marketFactory;
 
     /// @notice Placeholder ID for the JSON API Agent
     uint256 public constant JSON_API_AGENT_ID = 1;
@@ -148,6 +156,25 @@ contract PythiaOracle is IAgentRequesterHandler {
             
             emit PriceReceived(requestId, price);
         }
+    }
+
+    /// @notice Sets the MarketFactory address. Only callable by the owner.
+    /// @param _factory The address of the new MarketFactory
+    function setMarketFactory(address _factory) external {
+        require(msg.sender == owner, "Only owner can set factory");
+        require(_factory != address(0), "Invalid factory address");
+        marketFactory = _factory;
+    }
+
+    /// @notice Creates a new PredictionMarket via the factory. Only callable by the owner.
+    /// @param question The question being predicted.
+    /// @param strikePrice The strike price for price-based markets.
+    /// @param deadline The deadline after which bets can no longer be placed.
+    function createMarketViaFactory(string memory question, uint256 strikePrice, uint256 deadline) external payable {
+        require(msg.sender == owner, "Only owner can create markets via factory");
+        require(marketFactory != address(0), "MarketFactory not set");
+        
+        IMarketFactory(marketFactory).createMarket{value: msg.value}(question, strikePrice, deadline);
     }
 
     /// @notice Allow the contract to receive ETH (e.g., for unused deposit rebates from the platform)
