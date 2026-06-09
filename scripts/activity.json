@@ -1,119 +1,5 @@
 [
   {
-    "timestamp": "2026-06-04T22:48:19.098Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-04T22:55:51.775Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-04T23:03:52.285Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-04T23:10:52.740Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-04T23:18:54.382Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-04T23:25:51.687Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-04T23:40:51.998Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-04T23:55:52.379Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-05T00:03:52.897Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-05T00:10:51.858Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-05T00:16:14.157Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-05T00:18:53.182Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-05T00:26:08.528Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-05T00:38:25.151Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-05T00:40:51.732Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-05T00:42:00.309Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-05T00:45:06.820Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-05T00:48:16.669Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
-    "timestamp": "2026-06-05T00:48:52.937Z",
-    "type": "EVALUATE",
-    "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
-    "marketAddress": null
-  },
-  {
     "timestamp": "2026-06-05T00:53:25.069Z",
     "type": "EVALUATE",
     "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
@@ -327,6 +213,390 @@
     "timestamp": "2026-06-05T01:57:00.024Z",
     "type": "EVALUATE",
     "message": "Sending market proposal to onchain LLM: \"Will BTC exceed $105,000 by June 11, 2026?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:18:47.672Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: BTC is currently at $62,518. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:18:51.694Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will BTC exceed $65,644 in 7 days?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:18:51.694Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: ETH is currently at $1,668.21. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:18:55.845Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will ETH exceed $1,752 in 7 days?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:18:55.846Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOL is currently at $66.07. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:18:59.969Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOL exceed $69 in 7 days?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:18:59.970Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOMI is currently at $0.108. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:19:04.160Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOMI exceed $0 in 7 days?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:21:37.165Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: BTC is currently at $62,506. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:21:41.381Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will BTC exceed $63,756 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:21:41.383Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: ETH is currently at $1,667.18. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:21:45.634Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will ETH exceed $1,701 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:21:45.636Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOL is currently at $66.02. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:21:47.272Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOL exceed $67 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:21:47.277Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOMI is currently at $0.108. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:21:49.699Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOMI exceed $0 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:22:23.111Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: BTC is currently at $62,506. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:22:27.005Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will BTC exceed $65,631 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:22:27.009Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: ETH is currently at $1,667.18. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:22:31.375Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will ETH exceed $1,701 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:22:31.376Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOL is currently at $66.02. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:22:34.016Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOL exceed $67 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:22:34.018Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOMI is currently at $0.108. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:22:40.362Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOMI exceed $0 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:22:57.438Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: BTC is currently at $62,489. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:22:59.881Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will BTC exceed $65,613 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:22:59.883Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: ETH is currently at $1,666.57. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:02.635Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will ETH exceed $1,750 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:02.637Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOL is currently at $65.98. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:07.742Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOL exceed $67 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:07.746Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOMI is currently at $0.108. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:10.431Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOMI exceed $0 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:27.019Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: BTC is currently at $62,489. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:30.074Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will BTC exceed $63,739 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:30.075Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: ETH is currently at $1,666.57. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:34.239Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will ETH exceed $1,750 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:34.239Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOL is currently at $65.98. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:38.590Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOL exceed $67 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:38.590Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOMI is currently at $0.108. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:42.786Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOMI exceed $0 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:23:59.336Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: BTC is currently at $62,494. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:05.304Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will BTC exceed $65,619 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:05.305Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: ETH is currently at $1,666.94. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:09.452Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will ETH exceed $1,700 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:09.453Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOL is currently at $65.96. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:11.695Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOL exceed $67 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:11.696Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOMI is currently at $0.108. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:14.111Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOMI exceed $0 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:30.432Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: BTC is currently at $62,494. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:33.057Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will BTC exceed $65,619 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:33.059Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: ETH is currently at $1,666.94. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:37.168Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will ETH exceed $1,700 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:37.169Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOL is currently at $65.96. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:41.659Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOL exceed $69 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:41.660Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOMI is currently at $0.108. Proposing a 5% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:24:45.754Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOMI exceed $0 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:25:02.800Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: BTC is currently at $62,558. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:25:07.159Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will BTC exceed $63,809 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:25:07.160Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: ETH is currently at $1,668.19. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:25:11.562Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will ETH exceed $1,702 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:25:11.563Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOL is currently at $65.99. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:25:15.559Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOL exceed $67 in 2 mins?\"",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:25:15.561Z",
+    "type": "EVALUATE",
+    "message": "Analyzing market conditions: SOMI is currently at $0.108. Proposing a 2% upside market based on volatility profile.",
+    "marketAddress": null
+  },
+  {
+    "timestamp": "2026-06-09T11:25:19.646Z",
+    "type": "LLM_EVAL",
+    "message": "Requested on-chain LLM validation for: \"Will SOMI exceed $0 in 2 mins?\"",
     "marketAddress": null
   }
 ]

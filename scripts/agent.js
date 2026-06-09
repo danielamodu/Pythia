@@ -1,4 +1,5 @@
 const { ethers } = require("ethers");
+const { createClient } = require("@supabase/supabase-js");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
@@ -12,6 +13,13 @@ const activityPath = path.join(__dirname, "activity.json");
 const quotaPath = path.join(__dirname, "quota.json");
 const perfPath = path.join(__dirname, "../frontend/data/performance.json");
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+let supabase = null;
+if (supabaseUrl && supabaseKey) {
+  supabase = createClient(supabaseUrl, supabaseKey);
+}
+
 function logActivity(type, message, marketAddress = null) {
   let data = [];
   if (fs.existsSync(activityPath)) {
@@ -20,6 +28,17 @@ function logActivity(type, message, marketAddress = null) {
   data.push({ timestamp: new Date().toISOString(), type, message, marketAddress });
   if (data.length > 100) data = data.slice(data.length - 100);
   fs.writeFileSync(activityPath, JSON.stringify(data, null, 2));
+
+  // Push to Supabase asynchronously (fire and forget)
+  if (supabase) {
+    supabase.from("pythia_activity").insert([{
+      type,
+      message,
+      market_address: marketAddress
+    }]).then(({ error }) => {
+      if (error) console.error("[SUPABASE ERROR]", error.message);
+    });
+  }
 }
 
 const constantsPath = path.join(__dirname, "../frontend/src/utils/constants.ts");
@@ -169,9 +188,23 @@ async function runAgent() {
   try {
     const existingAddresses = await factory.getMarkets();
     const existingQuestions = new Set();
+    const activeAssets = new Set();
     for (const address of existingAddresses) {
       const m = new ethers.Contract(address, marketAbi, provider);
-      try { existingQuestions.add(await m.question()); } catch (e) {}
+      try { 
+        const q = await m.question();
+        const state = await m.state();
+        if (Number(state) === 0) { // Only track OPEN markets as active
+          existingQuestions.add(q);
+          const a = parseAsset(q);
+          if (a) activeAssets.add(a);
+        }
+      } catch (e) {}
+    }
+
+    for (const req of pendingRequests.values()) {
+      const a = parseAsset(req.dep.question);
+      if (a) activeAssets.add(a);
     }
 
     const pendingDeployments = [];
@@ -186,6 +219,11 @@ async function runAgent() {
     ];
     
     for (const asset of priceAssets) {
+      if (activeAssets.has(asset.name)) {
+        console.log(`[SKIP] An open or pending market for ${asset.name} already exists.`);
+        continue;
+      }
+
       const curr = currentData[asset.key];
       if (curr === null) continue;
       
@@ -246,7 +284,8 @@ async function runAgent() {
     }
 
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] Discovery error:`, error);
+    logActivity("ERROR", `Discovery phase failed: ${error.message}`);
+    throw error;
   }
 }
 
@@ -308,7 +347,8 @@ async function runResolver() {
       }
     }
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] Resolver error:`, error);
+    logActivity("ERROR", `Resolver phase failed: ${error.message}`);
+    throw error;
   }
 }
 
@@ -332,19 +372,24 @@ function saveReasoning(dep, reasoningData, marketAddress) {
 
 oracle.on("EventScored", async (reqId, score) => {
   const key = reqId.toString();
+  console.log(`\n[EVENT RECEIVED] EventScored fired for request ${key} with score ${score}`);
   const pending = pendingRequests.get(key);
-  if (!pending) return;
+  if (!pending) {
+    console.log(`[WARNING] No pending request found for id ${key}. Ignoring.`);
+    return;
+  }
 
-  logActivity("LLM_SCORED", `LLM scored market proposal: ${score}/100 — ${pending.dep.question}`);
+  logActivity("LLM_SCORED", `LLM scored market proposal: ${score}/100 \u2014 ${pending.dep.question}`);
 
   if (Number(score) > 60) {
-    console.log(`✅ Score ${score} > 60 — market creation triggered onchain!`);
+    console.log(`\u2705 Score ${score} > 60 \u2014 market creation triggered onchain!`);
   } else {
     logActivity("REJECTED", `LLM rejected market (score ${score}/100): ${pending.dep.question}`);
   }
 });
 
 oracle.on("MarketCreated", (marketAddr, question, deadline) => {
+  console.log(`\n[EVENT RECEIVED] MarketCreated fired for market ${marketAddr}: ${question}`);
   logActivity("DEPLOY", `New market deployed onchain: ${question}`, marketAddr);
   
   let matchedReqId = null;
@@ -359,17 +404,41 @@ oracle.on("MarketCreated", (marketAddr, question, deadline) => {
     const req = pendingRequests.get(matchedReqId);
     saveReasoning(req.dep, req.reasoningData, marketAddr);
     pendingRequests.delete(matchedReqId);
+    console.log(`[SUCCESS] Matched market ${marketAddr} to request ${matchedReqId} and saved reasoning.`);
+  } else {
+    console.log(`[WARNING] Could not match MarketCreated event to any pending request for question: ${question}`);
   }
 });
 
 console.log(`⚡ [AGENT] Initialized ${isDemoMode ? "in DEMO MODE (120s deadlines)" : "for PRODUCTION"}`);
 console.log(`⚡ [AGENT] Persistent listeners registered.`);
 
+let consecutiveErrors = 0;
+const MAX_RETRIES = 5;
+
 async function mainLoop() {
-  await runAgent();
-  await runResolver();
+  try {
+    await runAgent();
+    await runResolver();
+    consecutiveErrors = 0; // reset on success
+  } catch (error) {
+    consecutiveErrors++;
+    console.error(`[ERROR] Main loop failed (Attempt ${consecutiveErrors}/${MAX_RETRIES}):`, error.message);
+    if (consecutiveErrors >= MAX_RETRIES) {
+      logActivity("FATAL", "Max retries exceeded. Halting operations for 1 hour to prevent infinite loops.");
+      console.log("Max retries exceeded. Sleeping for 1 hour...");
+      setTimeout(mainLoop, 60 * 60 * 1000);
+      return;
+    }
+  }
+
+  const baseIntervalMs = isDemoMode ? 15000 : 15 * 60 * 1000;
+  // Exponential backoff if there are errors (1x, 2x, 4x, 8x...)
+  const nextIntervalMs = consecutiveErrors > 0 
+    ? baseIntervalMs * (2 ** (consecutiveErrors - 1)) 
+    : baseIntervalMs;
+    
+  setTimeout(mainLoop, nextIntervalMs);
 }
 
 mainLoop();
-const intervalMs = isDemoMode ? 15000 : 15 * 60 * 1000;
-setInterval(mainLoop, intervalMs);
