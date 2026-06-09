@@ -4,7 +4,7 @@ const path = require("path");
 require("dotenv").config();
 
 const RPC_URL = "https://dream-rpc.somnia.network";
-const ORACLE_ADDRESS = "0x4AAc731865d798eAcAE230459690D251cfCe45A6";
+const ORACLE_ADDRESS = "0x153e324e6E7D65720da3dd947620C145a5a3f235";
 
 async function main() {
   const privateKey = process.env.PRIVATE_KEY;

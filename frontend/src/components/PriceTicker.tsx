@@ -18,7 +18,7 @@ type AssetData = {
   ticker: string;
   name: string;
   price: number;
-  change24h: number;
+  change1m: number;
   sparkline: number[]; // just prices
 };
 

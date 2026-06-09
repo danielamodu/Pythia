@@ -64,7 +64,7 @@ interface IAgentRequesterHandler {
 }
 
 interface IMarketFactory {
-    function createMarket(string memory question, uint256 strikePrice, uint256 deadline) external payable;
+    function createMarket(string memory question, uint256 strikePrice, uint256 deadline, string memory category, string memory reasoningURI) external payable;
 }
 
 interface IPredictionMarket {
