@@ -1,0 +1,58 @@
+:root {
+  /* Strict B&W Minimalist Design System */
+  --bg-color: #000000;
+  --surface-color: #0A0A0A;
+  --elevated-color: #111111;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --accent-color: #FFFFFF;
+  
+  --text-primary: #FFFFFF;
+  --text-secondary: #888888;
+  --text-muted: #444444;
+}
+
+html, body {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-space-grotesk), sans-serif;
+  overflow-x: hidden;
+  height: 100%;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-space-grotesk), sans-serif;
+  margin: 0;
+  font-weight: 800;
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-color) var(--elevated-color);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--elevated-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--accent-color);
+  border-radius: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input {
+  font-family: inherit;
+  border-radius: 0;
+}

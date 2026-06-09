@@ -1,0 +1,79 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.hero {
+  padding: 40px 24px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.title {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -1px;
+}
+
+.subtitle {
+  font-family: var(--font-space-mono), monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.splitLayout {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.leftCol {
+  flex: 1;
+  padding: 24px;
+  border-right: 1px solid var(--border-color);
+}
+
+.rightCol {
+  flex: 1;
+  padding: 24px;
+}
+
+@media (max-width: 1024px) {
+  .splitLayout {
+    flex-direction: column;
+  }
+  .leftCol {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+}
+
+.marketsSection {
+  padding: 24px;
+}
+
+.sectionTitle {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 32px 16px;
+  }
+  .title {
+    font-size: 24px;
+  }
+  .leftCol, .rightCol, .marketsSection {
+    padding: 16px;
+  }
+}

@@ -1,0 +1,124 @@
+.container {
+  padding: 40px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 32px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  margin-bottom: 40px;
+}
+
+.emptyState {
+  padding: 60px;
+  text-align: center;
+  border: 1px dashed var(--border-color);
+  color: var(--text-low);
+  font-family: var(--font-dm-mono), monospace;
+}
+
+.claimsList {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.claimCard {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  padding: 24px;
+}
+
+.cardHeader {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  margin-bottom: 12px;
+}
+
+.question {
+  font-size: 20px;
+  margin-bottom: 24px;
+}
+
+.betInfo {
+  margin-bottom: 24px;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 16px 0;
+}
+
+.betRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-family: var(--font-dm-mono), monospace;
+}
+
+.betRow:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  color: var(--text-muted);
+}
+
+.value {
+  color: var(--text-color);
+}
+
+.valuePayout {
+  color: var(--accent-color);
+  font-weight: 500;
+}
+
+.valueLoss {
+  color: var(--text-low);
+}
+
+.actionArea {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.claimBtn {
+  background-color: var(--accent-color);
+  color: var(--bg-color);
+  border: none;
+  padding: 12px 24px;
+  font-family: var(--font-inter), sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.claimBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.claimBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lostText {
+  color: var(--text-low);
+  font-style: italic;
+  font-size: 14px;
+}
+
+.errorText {
+  color: #ff4444;
+  margin-top: 12px;
+  font-size: 14px;
+}

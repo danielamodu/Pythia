@@ -25,6 +25,9 @@ contract PredictionMarket {
     uint256 public constant FEE_BPS = 200; // 2% protocol fee
     address public treasury;
 
+    uint256 public resolvedAt;
+    uint256 public constant DISPUTE_PERIOD = 24 hours;
+
     // To track if a user has already claimed winnings to prevent double claiming
     mapping(address => bool) public hasClaimed;
     
@@ -91,12 +94,21 @@ contract PredictionMarket {
         require(block.timestamp < deadline, "Deadline has passed");
         require(msg.value > 0, "Bet amount must be greater than zero");
 
+        uint256 timeRemaining = deadline - block.timestamp;
+        uint256 effectiveValue = msg.value;
+        
+        if (timeRemaining < 24 hours) {
+            uint256 lateFee = (msg.value * 500) / 10000;
+            feesToWithdraw += lateFee;
+            effectiveValue = msg.value - lateFee;
+        }
+
         if (side) {
-            yesBets[msg.sender] += msg.value;
-            totalYes += msg.value;
+            yesBets[msg.sender] += effectiveValue;
+            totalYes += effectiveValue;
         } else {
-            noBets[msg.sender] += msg.value;
-            totalNo += msg.value;
+            noBets[msg.sender] += effectiveValue;
+            totalNo += effectiveValue;
         }
 
         emit BetPlaced(msg.sender, side, msg.value);
@@ -124,7 +136,20 @@ contract PredictionMarket {
 
         outcome = _outcome;
         state = MarketState.RESOLVED;
+        resolvedAt = block.timestamp;
 
+        emit MarketResolved(_outcome);
+    }
+
+    /**
+     * @dev Allows the protocol treasury to override the outcome during the dispute period in case of oracle hallucination.
+     */
+    function adminOverride(bool _outcome) external {
+        require(msg.sender == treasury, "Only treasury can override");
+        require(state == MarketState.RESOLVED, "Market must be resolved first");
+        require(block.timestamp < resolvedAt + DISPUTE_PERIOD, "Dispute period ended");
+        
+        outcome = _outcome;
         emit MarketResolved(_outcome);
     }
 
@@ -134,6 +159,7 @@ contract PredictionMarket {
      */
     function claimWinnings() external {
         require(state == MarketState.RESOLVED, "Market is not resolved");
+        require(block.timestamp >= resolvedAt + DISPUTE_PERIOD, "Dispute period active");
         require(!hasClaimed[msg.sender], "Already claimed");
 
         uint256 userBetAmount = outcome ? yesBets[msg.sender] : noBets[msg.sender];

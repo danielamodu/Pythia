@@ -1,0 +1,158 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.container {
+  padding: 40px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.title {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  letter-spacing: -1px;
+  text-align: center;
+}
+
+.subtitle {
+  font-family: var(--font-space-mono), monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.podium {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.podiumCard {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 260px;
+}
+
+.firstPlace {
+  border-color: var(--text-primary);
+  transform: translateY(-12px);
+  padding: 32px 16px;
+}
+
+.rankBadge {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.address {
+  font-family: var(--font-space-mono), monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.volume {
+  font-family: var(--font-space-mono), monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.winRate {
+  font-family: var(--font-space-mono), monospace;
+  font-size: 10px;
+  color: var(--text-primary);
+  background-color: var(--elevated-color);
+  padding: 4px 6px;
+}
+
+.tableContainer {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+.table th {
+  text-align: left;
+  padding: 16px;
+  font-family: var(--font-space-mono), monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table td {
+  padding: 16px;
+  font-family: var(--font-space-mono), monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.rightAlign {
+  text-align: right;
+}
+
+.agentRow {
+  background-color: var(--elevated-color);
+}
+
+.agentBadge {
+  font-family: var(--font-space-mono), monospace;
+  font-size: 9px;
+  background-color: var(--text-primary);
+  color: var(--bg-color);
+  padding: 4px 6px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+@media (max-width: 768px) {
+  .podium {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .firstPlace {
+    transform: none;
+    order: -1;
+  }
+  .podiumCard {
+    width: 100%;
+    max-width: 100%;
+  }
+  .container {
+    padding: 24px 16px;
+  }
+}

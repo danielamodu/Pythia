@@ -1,0 +1,273 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  width: 90%;
+  max-width: 600px;
+  padding: 40px;
+  position: relative;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 4px 8px;
+}
+
+.closeBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.question {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 28px;
+  margin-bottom: 32px;
+  line-height: 1.2;
+  color: var(--text-primary);
+  padding-right: 40px; /* Space for close btn */
+}
+
+.stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.statBox {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+}
+
+.statBox label {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.statBox span {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tradingUI {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.input {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 16px;
+  font-size: 16px;
+  outline: none;
+  width: 100%;
+  font-family: var(--font-dm-mono), monospace;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: var(--text-primary);
+}
+
+.toggleGroup {
+  display: flex;
+  border: 1px solid var(--border-color);
+}
+
+.toggleBtn {
+  flex: 1;
+  padding: 16px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.toggleBtn.selected {
+  background-color: var(--text-primary);
+  color: var(--bg-color);
+}
+
+.toggleBtn:not(.selected):hover {
+  background-color: var(--elevated-color);
+  color: var(--text-primary);
+}
+
+.actionButtons {
+  display: flex;
+  gap: 16px;
+}
+
+.placeBetBtn {
+  width: 100%;
+  padding: 16px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: var(--elevated-color);
+  color: var(--text-primary);
+}
+
+.placeBetBtn:hover:not(:disabled) {
+  background-color: var(--text-primary);
+  color: var(--bg-color);
+}
+
+.placeBetBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bettorListSection {
+  margin-top: 40px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 24px;
+}
+
+.bettorListTitle {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.bettorList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.emptyBets {
+  color: var(--text-muted);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-align: center;
+  padding: 24px 0;
+  text-transform: uppercase;
+}
+
+.betRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 12px;
+}
+
+.betUser {
+  color: var(--text-secondary);
+}
+
+.betSideYes {
+  color: var(--bg-color);
+  background-color: var(--text-primary);
+  padding: 2px 6px;
+  font-weight: 700;
+}
+
+.betSideNo {
+  color: var(--text-primary);
+  background-color: var(--text-muted);
+  padding: 2px 6px;
+  font-weight: 700;
+}
+
+.betAmount {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.closedState {
+  padding: 24px;
+  text-align: center;
+  background-color: var(--elevated-color);
+  border: 1px solid var(--border-color);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.connectMsg {
+  padding: 24px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  background-color: var(--elevated-color);
+  color: var(--text-secondary);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.claimBtn {
+  margin-top: 24px;
+  width: 100%;
+  padding: 16px;
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  background-color: var(--text-primary);
+  color: var(--bg-color);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.claimBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}

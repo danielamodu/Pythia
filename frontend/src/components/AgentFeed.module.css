@@ -1,0 +1,67 @@
+.container {
+  width: 100%;
+}
+
+.title {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 24px;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 16px;
+}
+
+.empty {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.feedItem {
+  display: flex;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.feedItem:last-child {
+  border-bottom: none;
+}
+
+.time {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.type {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.message {
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}

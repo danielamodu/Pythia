@@ -5,178 +5,242 @@ pragma solidity 0.8.20;
 enum ConsensusType { Majority, Threshold }
 
 /// @notice Status of an agent response
-enum ResponseStatus { None, Pending, Success, Failed, TimedOut }
+enum ResponseStatus {
+    None,       // 0 - Default zero value
+    Pending,    // 1 - Awaiting responses
+    Success,    // 2 - Consensus reached normally
+    Failed,     // 3 - Validators reported failure
+    TimedOut    // 4 - Request timed out
+}
 
 /// @notice Struct representing an individual agent response
 struct Response {
+    address validator;
     bytes result;
-    address agent;
+    ResponseStatus status;
+    uint256 receipt;
     uint256 timestamp;
+    uint256 executionCost;
 }
 
-/// @notice Struct representing a request to an agent
 struct Request {
-    uint256 agentId;
-    bytes payload;
-    ConsensusType consensusType;
-    uint256 threshold;
+    uint256 id;
+    address requester;
     address callbackAddress;
     bytes4 callbackSelector;
+    address[] subcommittee;
+    Response[] responses;
+    uint256 responseCount;
+    uint256 failureCount;
+    uint256 threshold;
+    uint256 createdAt;
     uint256 deadline;
+    ResponseStatus status;
+    ConsensusType consensusType;
+    uint256 remainingBudget;
+    uint256 perAgentBudget;
 }
 
 /// @notice Interface for interacting with the Somnia platform agent requester
 interface IAgentRequester {
-    /// @notice Creates a new request to an agent
-    /// @param request The request details
-    /// @return The unique ID of the created request
-    function createRequest(Request calldata request) external payable returns (uint256);
+    function createRequest(
+        uint256 agentId,
+        address callbackAddress,
+        bytes4 callbackSelector,
+        bytes calldata payload
+    ) external payable returns (uint256 requestId);
 
-    /// @notice Gets the required deposit amount for a specific agent ID
-    /// @param agentId The ID of the agent
-    /// @return The required deposit in wei
-    function getRequestDeposit(uint256 agentId) external view returns (uint256);
+    function getRequestDeposit() external view returns (uint256);
 }
 
 /// @notice Interface for handling responses from the Somnia platform
 interface IAgentRequesterHandler {
-    /// @notice Callback invoked by the platform when a request is fulfilled, failed, or timed out
-    /// @param requestId The ID of the request
-    /// @param status The final status of the request
-    /// @param responses Array of responses from agents
-    /// @param context Additional context passed during request creation
     function handleResponse(
         uint256 requestId,
+        Response[] memory responses,
         ResponseStatus status,
-        Response[] calldata responses,
-        bytes calldata context
+        Request memory details
     ) external;
 }
 
-/// @notice Interface for interacting with the MarketFactory
 interface IMarketFactory {
     function createMarket(string memory question, uint256 strikePrice, uint256 deadline) external payable;
+}
+
+interface IPredictionMarket {
+    function question() external view returns (string memory);
+    function strikePrice() external view returns (uint256);
+    function deadline() external view returns (uint256);
+    function state() external view returns (uint8);
+    function resolve(bool outcome) external;
 }
 
 /// @title PythiaOracle
 /// @notice Autonomous prediction market oracle for Somnia testnet
 contract PythiaOracle is IAgentRequesterHandler {
-    /// @notice The SomniaAgents platform address
     address public immutable platform;
-
-    /// @notice The owner (deployer) of the contract
     address public owner;
-
-    /// @notice The MarketFactory address
     address public marketFactory;
 
-    /// @notice Placeholder ID for the JSON API Agent
-    uint256 public constant JSON_API_AGENT_ID = 1;
+    uint256 public constant JSON_API_AGENT_ID = 13174292974160097713;
+    uint256 public constant LLM_INFERENCE_AGENT_ID = 12847293847561029384;
 
-    /// @notice Mapping to track pending requests by ID
     mapping(uint256 => bool) public pendingRequests;
+    
+    // For tracking market creation (LLM_INFERENCE)
+    mapping(uint256 => string) public pendingQuestions;
+    mapping(uint256 => uint256) public pendingStrikePrices;
+    mapping(uint256 => uint256) public pendingDeadlines;
 
-    /// @notice Mapping to store metadata (e.g., URL) for each request ID
-    mapping(uint256 => string) public requestMeta;
+    // For tracking market resolution (JSON_API)
+    mapping(uint256 => address) public resolutionRequests;
 
-    /// @notice Event emitted when a price fetch request is initiated
-    /// @param requestId The ID of the request
-    /// @param url The URL being fetched
-    event PriceRequested(uint256 requestId, string url);
-
-    /// @notice Event emitted when a price is successfully received
-    /// @param requestId The ID of the request
-    /// @param price The price fetched
+    event EventScoringRequested(uint256 requestId, string eventDescription);
+    event EventScored(uint256 requestId, uint256 score);
+    event ResolutionRequested(uint256 requestId, address market);
     event PriceReceived(uint256 requestId, uint256 price);
 
-    /// @notice Constructor to initialize the platform address and owner
-    /// @param _platform The SomniaAgents platform contract address
     constructor(address _platform) {
         platform = _platform;
         owner = msg.sender;
     }
 
-    /// @notice Requests a price fetch from a specific URL and JSON path
-    /// @param url The URL to fetch data from
-    /// @param jsonPath The JSON path to extract the value from
-    function requestPriceFetch(string calldata url, string calldata jsonPath) external payable {
-        // Encode the payload for the agent (assumes the agent expects a string function name followed by arguments)
-        bytes memory payload = abi.encode("fetchUint", url, jsonPath);
+    /// @notice Calls Somnia's LLM inference agent to score an event
+    function scoreEvent(
+        string memory eventDescription,
+        string memory question,
+        uint256 strikePrice,
+        uint256 deadline
+    ) external payable {
+        bytes memory payload = abi.encodeWithSignature("inferNumber(string,uint256,uint256)", eventDescription, uint256(0), uint256(100));
 
-        // Build the request object
-        Request memory request = Request({
-            agentId: JSON_API_AGENT_ID,
-            payload: payload,
-            consensusType: ConsensusType.Majority,
-            threshold: 1, // Single response is sufficient for now
-            callbackAddress: address(this),
-            callbackSelector: this.handleResponse.selector,
-            deadline: block.timestamp + 1 hours // Timeout after 1 hour
-        });
-
-        // Ensure sufficient msg.value was provided for the deposit
-        uint256 requiredDeposit = IAgentRequester(platform).getRequestDeposit(JSON_API_AGENT_ID);
+        uint256 requiredDeposit = IAgentRequester(platform).getRequestDeposit();
         require(msg.value >= requiredDeposit, "Insufficient deposit for request");
 
-        // Send the request to the platform
-        uint256 requestId = IAgentRequester(platform).createRequest{value: msg.value}(request);
+        uint256 requestId = IAgentRequester(platform).createRequest{value: msg.value}(
+            LLM_INFERENCE_AGENT_ID,
+            address(this),
+            this.handleResponse.selector,
+            payload
+        );
 
-        // Store request state
         pendingRequests[requestId] = true;
-        requestMeta[requestId] = url;
+        pendingQuestions[requestId] = question;
+        pendingStrikePrices[requestId] = strikePrice;
+        pendingDeadlines[requestId] = deadline;
 
-        // Emit event
-        emit PriceRequested(requestId, url);
+        emit EventScoringRequested(requestId, eventDescription);
     }
 
-    /// @notice Callback function used by the Somnia platform to deliver the agent's response
-    /// @param requestId The ID of the completed request
-    /// @param status The final status of the request
-    /// @param responses Array of agent responses
-    /// @param context Optional context bytes
+    /// @notice Requests resolution for a market
+    function requestResolution(address marketAddress) external payable {
+        IPredictionMarket market = IPredictionMarket(marketAddress);
+        require(market.state() == 1, "Market is not closed"); // 1 = CLOSED
+
+        string memory question = market.question();
+        string memory url;
+        string memory jsonPath;
+
+        // Basic parsing to figure out the asset
+        if (_contains(question, "BTC")) {
+            url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
+            jsonPath = "bitcoin.usd";
+        } else if (_contains(question, "ETH")) {
+            url = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd";
+            jsonPath = "ethereum.usd";
+        } else if (_contains(question, "SOL")) {
+            url = "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd";
+            jsonPath = "solana.usd";
+        } else if (_contains(question, "SOMI") || _contains(question, "Somnia")) {
+            url = "https://api.coingecko.com/api/v3/simple/price?ids=somnia&vs_currencies=usd";
+            jsonPath = "somnia.usd";
+        } else {
+            revert("Unknown asset in question");
+        }
+
+        bytes memory payload = abi.encodeWithSignature("fetchUint(string,string,uint8)", url, jsonPath, uint8(8));
+
+        uint256 requiredDeposit = IAgentRequester(platform).getRequestDeposit();
+        require(msg.value >= requiredDeposit, "Insufficient deposit for request");
+
+        uint256 requestId = IAgentRequester(platform).createRequest{value: msg.value}(
+            JSON_API_AGENT_ID,
+            address(this),
+            this.handleResponse.selector,
+            payload
+        );
+
+        pendingRequests[requestId] = true;
+        resolutionRequests[requestId] = marketAddress;
+
+        emit ResolutionRequested(requestId, marketAddress);
+    }
+
+    /// @notice Callback from platform
     function handleResponse(
         uint256 requestId,
+        Response[] memory responses,
         ResponseStatus status,
-        Response[] calldata responses,
-        bytes calldata context
+        Request memory details
     ) external override {
-        // Enforce access control to ensure only the platform can call this function
         require(msg.sender == platform, "Only platform can call");
-
-        // Check if the request is actually pending
         require(pendingRequests[requestId], "Request not pending");
 
-        // Mark the request as no longer pending
         pendingRequests[requestId] = false;
 
-        // Process successful responses
         if (status == ResponseStatus.Success && responses.length > 0) {
-            // Decode the uint256 price from the first response's result
-            uint256 price = abi.decode(responses[0].result, (uint256));
-            
-            emit PriceReceived(requestId, price);
+            uint256 resultValue = abi.decode(responses[0].result, (uint256));
+
+            if (bytes(pendingQuestions[requestId]).length > 0) {
+                // It was an event scoring
+                emit EventScored(requestId, resultValue);
+                if (resultValue > 60 && marketFactory != address(0)) {
+                    string memory q = pendingQuestions[requestId];
+                    uint256 sp = pendingStrikePrices[requestId];
+                    uint256 dl = pendingDeadlines[requestId];
+                    IMarketFactory(marketFactory).createMarket{value: 0.005 ether}(q, sp, dl);
+                }
+            } else if (resolutionRequests[requestId] != address(0)) {
+                // It was a resolution request
+                emit PriceReceived(requestId, resultValue);
+                address marketAddress = resolutionRequests[requestId];
+                uint256 strikePrice = IPredictionMarket(marketAddress).strikePrice();
+                bool outcome = resultValue >= strikePrice;
+                IPredictionMarket(marketAddress).resolve(outcome);
+            }
         }
     }
 
-    /// @notice Sets the MarketFactory address. Only callable by the owner.
-    /// @param _factory The address of the new MarketFactory
+    function _contains(string memory what, string memory find) internal pure returns (bool) {
+        bytes memory whatBytes = bytes(what);
+        bytes memory findBytes = bytes(find);
+        if(findBytes.length == 0) return true;
+        if(whatBytes.length < findBytes.length) return false;
+        
+        for (uint i = 0; i <= whatBytes.length - findBytes.length; i++) {
+            bool found = true;
+            for (uint j = 0; j < findBytes.length; j++) {
+                if (whatBytes[i + j] != findBytes[j]) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) return true;
+        }
+        return false;
+    }
+
     function setMarketFactory(address _factory) external {
         require(msg.sender == owner, "Only owner can set factory");
         require(_factory != address(0), "Invalid factory address");
         marketFactory = _factory;
     }
 
-    /// @notice Creates a new PredictionMarket via the factory. Only callable by the owner.
-    /// @param question The question being predicted.
-    /// @param strikePrice The strike price for price-based markets.
-    /// @param deadline The deadline after which bets can no longer be placed.
     function createMarketViaFactory(string memory question, uint256 strikePrice, uint256 deadline) external payable {
         require(msg.sender == owner, "Only owner can create markets via factory");
         require(marketFactory != address(0), "MarketFactory not set");
-        
         IMarketFactory(marketFactory).createMarket{value: msg.value}(question, strikePrice, deadline);
     }
 
-    /// @notice Allow the contract to receive ETH (e.g., for unused deposit rebates from the platform)
     receive() external payable {}
 }
