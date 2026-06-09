@@ -13,7 +13,7 @@ contract MarketFactory {
     address[] public allMarkets;
     address public owner;
 
-    event MarketCreated(address market, string question, uint256 deadline);
+    event MarketCreated(address market, string question, uint256 deadline, string category, string reasoningURI);
 
     /**
      * @dev Initializes the factory, setting the oracle, treasury, and deployer as owner.
@@ -39,7 +39,9 @@ contract MarketFactory {
     function createMarket(
         string memory question,
         uint256 strikePrice,
-        uint256 deadline
+        uint256 deadline,
+        string memory category,
+        string memory reasoningURI
     ) external payable {
         require(msg.sender == owner || msg.sender == oracle, "Only owner or oracle can create markets");
 
@@ -53,7 +55,7 @@ contract MarketFactory {
 
         allMarkets.push(address(newMarket));
 
-        emit MarketCreated(address(newMarket), question, deadline);
+        emit MarketCreated(address(newMarket), question, deadline, category, reasoningURI);
     }
 
     /**

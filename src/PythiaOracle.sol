@@ -91,6 +91,8 @@ contract PythiaOracle is IAgentRequesterHandler {
     mapping(uint256 => string) public pendingQuestions;
     mapping(uint256 => uint256) public pendingStrikePrices;
     mapping(uint256 => uint256) public pendingDeadlines;
+    mapping(uint256 => string) public pendingCategories;
+    mapping(uint256 => string) public pendingReasoningURIs;
 
     // For tracking market resolution (JSON_API)
     mapping(uint256 => address) public resolutionRequests;
@@ -110,7 +112,9 @@ contract PythiaOracle is IAgentRequesterHandler {
         string memory eventDescription,
         string memory question,
         uint256 strikePrice,
-        uint256 deadline
+        uint256 deadline,
+        string memory category,
+        string memory reasoningURI
     ) external payable {
         bytes memory payload = abi.encodeWithSignature("inferNumber(string,uint256,uint256)", eventDescription, uint256(0), uint256(100));
 
@@ -128,6 +132,8 @@ contract PythiaOracle is IAgentRequesterHandler {
         pendingQuestions[requestId] = question;
         pendingStrikePrices[requestId] = strikePrice;
         pendingDeadlines[requestId] = deadline;
+        pendingCategories[requestId] = category;
+        pendingReasoningURIs[requestId] = reasoningURI;
 
         emit EventScoringRequested(requestId, eventDescription);
     }
@@ -198,7 +204,9 @@ contract PythiaOracle is IAgentRequesterHandler {
                     string memory q = pendingQuestions[requestId];
                     uint256 sp = pendingStrikePrices[requestId];
                     uint256 dl = pendingDeadlines[requestId];
-                    IMarketFactory(marketFactory).createMarket{value: 0.005 ether}(q, sp, dl);
+                    string memory cat = pendingCategories[requestId];
+                    string memory uri = pendingReasoningURIs[requestId];
+                    IMarketFactory(marketFactory).createMarket{value: 0.005 ether}(q, sp, dl, cat, uri);
                 }
             } else if (resolutionRequests[requestId] != address(0)) {
                 // It was a resolution request
@@ -236,10 +244,16 @@ contract PythiaOracle is IAgentRequesterHandler {
         marketFactory = _factory;
     }
 
-    function createMarketViaFactory(string memory question, uint256 strikePrice, uint256 deadline) external payable {
-        require(msg.sender == owner, "Only owner can create markets via factory");
+    function createMarketViaFactory(
+        string memory question, 
+        uint256 strikePrice, 
+        uint256 deadline,
+        string memory category,
+        string memory reasoningURI
+    ) external payable {
+        require(msg.sender == owner, "Only owner can call this");
         require(marketFactory != address(0), "MarketFactory not set");
-        IMarketFactory(marketFactory).createMarket{value: msg.value}(question, strikePrice, deadline);
+        IMarketFactory(marketFactory).createMarket{value: msg.value}(question, strikePrice, deadline, category, reasoningURI);
     }
 
     receive() external payable {}

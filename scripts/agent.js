@@ -505,7 +505,8 @@ async function runAgent() {
         const deposit = await platformContract.getRequestDeposit();
         console.log(`[DEBUG] Required deposit for agent: ${ethers.formatEther(deposit)} STT`);
 
-        const tx = await oracle.scoreEvent(dep.reasonText, dep.question, dep.targetValue, dep.deadline, { value: deposit });
+        const reasoningURI = "ipfs://placeholder-uri"; // TODO: Upload reasoning to IPFS
+        const tx = await oracle.scoreEvent(dep.reasonText, dep.question, dep.targetValue, dep.deadline, dep.category, reasoningURI, { value: deposit });
         const receipt = await tx.wait();
         
         let requestId = null;
