@@ -1,0 +1,39 @@
+# Environment files - NEVER commit these
+.env
+.env.local
+.env.development
+.env.production
+.env.*
+
+# Agent data files (contain runtime data, not needed in repo)
+scripts/reasoning.json
+scripts/performance.json
+scripts/quota.json
+scripts/history.json
+scripts/activity.json
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+
+# Foundry
+out/
+cache/
+broadcast/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
