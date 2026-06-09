@@ -13,7 +13,7 @@ import { Info, Brain, GlobeLock, Zap, X } from "lucide-react";
 
 export default function Header() {
   return (
-    <Suspense fallback={<HeaderInner />}>
+    <Suspense fallback={<header className={styles.header}><div className={styles.topRow}>PYTHIA</div></header>}>
       <HeaderInner />
     </Suspense>
   );
