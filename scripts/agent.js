@@ -184,6 +184,7 @@ function updatePerformanceMetrics(marketAddress, outcome, bettorCount, category)
     marketAddress, outcome, bettorCount, isAccurate, timestamp: Math.floor(Date.now() / 1000)
   });
   fs.writeFileSync(perfPath, JSON.stringify(perfData, null, 2));
+  logActivity("SYSTEM_PERFORMANCE", JSON.stringify(perfData));
   return { accuracy, avgBettors, weight: cat.weight };
 }
 
@@ -478,6 +479,7 @@ function saveReasoning(dep, reasoningData, marketAddress) {
       timestamp: Math.floor(Date.now() / 1000)
     });
     fs.writeFileSync(reasoningPath, JSON.stringify(reasoningData, null, 2));
+    logActivity("SYSTEM_REASONING", JSON.stringify(reasoningData));
     
     const currentQuota = getQuota();
     currentQuota.counts[dep.category]++;
@@ -569,6 +571,21 @@ async function mainLoop() {
     : baseIntervalMs;
     
   setTimeout(mainLoop, nextIntervalMs);
+}
+
+// Seed initial data to Supabase on agent boot
+try {
+  if (fs.existsSync(perfPath)) {
+    const perfData = JSON.parse(fs.readFileSync(perfPath, "utf8"));
+    logActivity("SYSTEM_PERFORMANCE", JSON.stringify(perfData));
+  }
+  if (fs.existsSync(reasoningPath)) {
+    const reasoningData = JSON.parse(fs.readFileSync(reasoningPath, "utf8"));
+    logActivity("SYSTEM_REASONING", JSON.stringify(reasoningData));
+  }
+  console.log("⚡ [AGENT] Initial performance & reasoning data synced to Supabase.");
+} catch (e) {
+  console.error("Failed to seed initial stats to Supabase:", e.message);
 }
 
 mainLoop();

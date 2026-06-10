@@ -47,14 +47,23 @@ function HeaderInner() {
         if (marketAddresses.length > 0) {
           const marketPromises = marketAddresses.map(async (address) => {
             const marketContract = new ethers.Contract(address, PREDICTION_MARKET_ABI, provider);
+            let yesVal = 0n;
+            let noVal = 0n;
+
             try {
               const [yes, no, state] = await Promise.all([
                 marketContract.totalYes(), 
                 marketContract.totalNo(),
                 marketContract.state()
               ]);
+              yesVal = yes;
+              noVal = no;
               if (Number(state) === 2) resolvedCount++;
-              
+            } catch(e) {
+              console.error("Failed to fetch state for market", address, e);
+            }
+            
+            try {
               const filter = marketContract.filters.BetPlaced();
               const logs = await marketContract.queryFilter(filter);
               logs.forEach((log: any) => {
@@ -63,11 +72,11 @@ function HeaderInner() {
                   bettorsSet.add(parsed.args[0]);
                 }
               });
-
-              return parseFloat(ethers.formatEther(yes)) + parseFloat(ethers.formatEther(no));
             } catch(e) {
-              return 0;
+              console.error("Failed to query bets for market", address, e);
             }
+
+            return parseFloat(ethers.formatEther(yesVal)) + parseFloat(ethers.formatEther(noVal));
           });
           const volumes = await Promise.all(marketPromises);
           totalVolume = volumes.reduce((acc, curr) => acc + curr, 0);
