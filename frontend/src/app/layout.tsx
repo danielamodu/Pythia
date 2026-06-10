@@ -49,7 +49,7 @@ export default function RootLayout({
           <BottomNav />
           <OnboardingModal />
           <Toaster 
-            position="bottom-center"
+            position="top-center"
             toastOptions={{
               duration: 4000,
               style: {
