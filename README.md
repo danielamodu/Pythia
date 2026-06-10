@@ -1,77 +1,179 @@
 # Pythia ⬡ Autonomous Prediction Markets
 
-Pythia is a fully autonomous prediction market platform powered by the **Somnia Network's Agentic L1 Architecture**.
+[![Somnia Network](https://img.shields.io/badge/Somnia-Testnet-blue?style=for-the-badge&logo=ethereum&color=blueviolet)](https://somnia.network)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Live_Demo-black?style=for-the-badge&logo=vercel)](https://pythia-danielamodu.vercel.app)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-Unlike traditional prediction markets that require centralized human oracles (like Polymarket's UMA disputes), Pythia uses Somnia's decentralized **LLM Inference Agents** and **JSON API Agents** to autonomously read news, deploy markets, and resolve outcomes on-chain with zero human intervention.
+> **The first fully autonomous, end-to-end prediction market protocol powered entirely by the Somnia Network's Agentic L1 Architecture.**
 
-## 🚀 The Agentic Architecture
+Live Demo: [pythia-danielamodu.vercel.app](https://pythia-danielamodu.vercel.app)  
+GitHub: [github.com/danielamodu/Pythia](https://github.com/danielamodu/Pythia)
 
-Pythia consists of three interacting layers:
+---
 
-1. **The Autonomous Crank (`agent.js`)**: An off-chain orchestrator that continually monitors real-world data and the blockchain state.
-2. **PythiaOracle (Smart Contract)**: The on-chain gateway that interfaces with Somnia's `AgentRequester`.
-3. **Somnia Decentralized Agents**: Secure, decentralized compute containers run by validators.
+## 👁️ Project Overview
 
-```mermaid
-sequenceDiagram
-    participant Crank as 🤖 agent.js (Off-chain)
-    participant Oracle as 📜 PythiaOracle.sol
-    participant Factory as 🏭 MarketFactory.sol
-    participant Somnia as 🧠 Somnia Agents (L1)
-    
-    rect rgb(30, 30, 30)
-    Note over Crank, Somnia: 1. Autonomous Market Creation
-    Crank->>+Oracle: scoreEvent(newsHeadline)
-    Oracle->>+Somnia: createRequest(LLM_INFERENCE_AGENT_ID)
-    Somnia-->>-Oracle: handleResponse(score)
-    Oracle->>Factory: createMarket() (if score > 60)
-    end
+Pythia represents a shift from hybrid Web3 apps to **native Agent-Driven DeFi (ADF)**. 
 
-    rect rgb(20, 40, 20)
-    Note over Crank, Somnia: 2. Autonomous Market Resolution
-    Crank->>+Oracle: requestResolution(marketAddress)
-    Oracle->>+Somnia: createRequest(JSON_API_AGENT_ID)
-    Somnia-->>-Oracle: handleResponse(priceData)
-    Oracle->>Factory: market.resolve(outcome)
-    end
+Traditional prediction markets (such as Polymarket) rely on centralized off-chain API scraping or manual optimistic oracle disputes (like UMA) to settle markets. Pythia is **100% autonomous**—executed by decentralized on-chain agents that run within validator nodes on Somnia. The protocol discovers opportunities, analyzes news impact, launches prediction pools, seeds liquidity, gathers real-world outcomes, and settles payouts trustlessly with **zero human intervention at any stage**.
+
+---
+
+## 🧠 On-Chain Agent Architecture
+
+Pythia utilizes three distinct Somnia decentralized agent types to drive its autonomous lifecycle:
+
+```text
+                       [ REAL-WORLD DATA FEEDS ]
+                     (Prices, Sentiment, Gas, Mempool)
+                                   │
+                                   ▼
+                         🤖 off-chain agent.js
+                       (PM2 Daemon on AWS EC2)
+                                   │
+                    1. scoreEvent(news_headline)
+                                   │
+                                   ▼
+                       📜 PythiaOracle Contract
+              (0x153e324e6E7D65720da3dd947620C145a5a3f235)
+                                   │
+        ┌──────────────────────────┴──────────────────────────┐
+        │ 2. query                                            │ 5. query
+        ▼                                                     ▼
+🧠 Somnia LLM Agent                                   🌐 Somnia JSON API Agent
+(ID: 12847293847561029384)                            (ID: 13174292974160097713)
+  └─────┬───────────────────────────────────────────────────────┘
+        │ 3. handleResponse() callback
+        ▼
+   [ Score > 60? ]
+        │
+        ├─► Yes: 🏭 MarketFactory.createMarket()
+        │        │
+        │        ▼
+        │     📜 PredictionMarket Contract (Instance)
+        │        │  - YES / NO pools
+        │        │  - Automated late betting fee structure
+        │        │  - Proportional pool payout mathematics
+        │        │
+        │        ├─◄ 4. User Places Bets (Web App UI)
+        │        │
+        │        └─◄ 6. resolve(outcome)
+        │              (Callback comparing strike vs API price)
+        │
+        └─► No: Discard proposal
 ```
 
-### 1. Autonomous Market Creation
-The off-chain crank (`agent.js`) fetches real-world crypto news and pushes the headlines to `PythiaOracle` via `scoreEvent()`. The smart contract uses the **LLM Inference Agent** (`12847293847561029384`) to analyze the news sentiment. If the LLM determines the news is highly impactful (score > 60), the oracle autonomously deploys a new prediction market.
+### Deployed Agent IDs & Mappings
+1. **LLM Inference Agent (`12847293847561029384`)**: Powered by a fine-tuned `Qwen3-30B` LLM. It ingests news, scores the headline's potential impact on a `0-100` index on-chain, and produces the logical justification for market parameters.
+2. **JSON API Request Agent (`13174292974160097713`)**: Queries external REST endpoints (e.g. CoinGecko) in a decentralized validator container, parses the payload on-chain, and feeds the numerical results back to the Oracle contract.
+3. **LLM Parse Website Agent (`128754011420769069085`)**: Used to crawl and structure text outcome pages for non-price markets (such as sentiment and correlation channels).
 
-### 2. Trustless Resolution
-When a market's deadline expires, the crank invokes `requestResolution()`. The smart contract triggers the **JSON API Agent** (`13174292974160097713`) which reaches out to public APIs (e.g., CoinGecko) in a decentralized container. The agent returns the data to the oracle via a callback, and the smart contract trustlessly resolves the market. No human validators needed.
+---
 
-## 💻 Tech Stack
-- **Smart Contracts**: Solidity, Foundry/Hardhat
-- **Agent Integration**: Somnia Agentic L1 (`createRequest`, `handleResponse`)
-- **Frontend**: Next.js, React, Framer Motion, Wagmi, RainbowKit
-- **Automation**: Node.js (`agent.js`)
+## 🛠️ Tech Stack
 
-## 🛠 Setup & Run
+* **Smart Contracts**: Solidity (v0.8.20), Foundry
+* **Frontend Web App**: Next.js 15 (App Router), React 19, RainbowKit & Wagmi, Ethers.js v6, Framer Motion
+* **Agent Infrastructure**: Node.js, PM2 process runner, AWS EC2
+* **Off-chain State Sync**: Supabase Realtime (for dynamic dashboard metrics and activity syncing)
+* **RPC Endpoint**: `https://dream-rpc.somnia.network` (Chain ID: `50312`)
 
-### 1. Smart Contracts
+---
+
+## 📋 Deployed Contract Addresses
+
+| Contract Name | Network | Address |
+|---|---|---|
+| **PythiaOracle** | Somnia Testnet | `0x153e324e6E7D65720da3dd947620C145a5a3f235` |
+| **MarketFactory** | Somnia Testnet | `0xA8AcAB87d7daf8A54aAD6E47fBf14b610aB92C2c` |
+| **PredictionMarkets** | Somnia Testnet | Deployed dynamically (34 instances live) |
+
+---
+
+## ⚖️ Judging Criteria Alignment
+
+### 1. Functionality & Integration
+* **Status**: Fully operational. 34 unique prediction markets have been autonomously deployed, funded, and are awaiting trustless resolving.
+* **Betting & Payout Engine**: Dynamic contract math splits the total STT pool proportionally among the winning side, deducting a standard `2%` protocol treasury fee. A progressive `5%` late fee is applied to bets placed within 24 hours of the deadline to penalize last-minute arbitrageurs.
+
+### 2. Agent-First Protocol Design
+* **On-Chain Sentiment**: Off-chain scripts cannot create markets. Creation decisions are delegated entirely to the on-chain LLM scoring response. If the LLM returns an impact score of 60 or below, the proposal is discarded, protecting the treasury from low-utility deployments.
+* **Consent & Execution**: The Oracle contract handles deposits and triggers callbacks natively, keeping the validation path trustless.
+
+### 3. Innovation & Logic Depth
+* **Dynamic Strike Calculation**: Strike targets are not hardcoded. They are calculated dynamically using asset price volatility (standard deviation metrics) over the past 24 hours, ensuring fair risk/reward ratios.
+* **Macro Reasoning Engine**: The agent cross-references on-chain metrics (SOMI gas fees, active address thresholds, fear & greed indexes, and BTC dominance percentage) to establish market correlation indexes.
+* **Recursive META Markets**: Pythia creates markets based on its own performance (e.g., "Will Pythia maintain an LLM accuracy rate above 75% this week?").
+
+### 4. Fully Autonomous Operation
+* **Infrastructure**: The off-chain orchestrator daemon (`agent.js`) runs continuously via PM2 on AWS EC2. It polls prices, feeds triggers, and manages oracle resolution calls.
+* **Zero Human Input**: Expired markets are closed, resolved on-chain via the JSON API agent, and payouts distributed with no administrative key requirements.
+
+---
+
+## 🗂️ Project Repository Structure
+
+```text
+├── src/                      # Solidity Smart Contracts
+│   ├── PythiaOracle.sol      # Requests/callbacks gateway to Somnia platform
+│   ├── MarketFactory.sol     # Factory deploying individual prediction pools
+│   └── PredictionMarket.sol  # Pool logic, bet placements, and claiming math
+├── scripts/                  # Onchain Agent & Operational Scripts
+│   ├── agent.js              # The PM2-managed orchestrator daemon
+│   ├── resolve.js            # Resolution trigger cron running every 30min
+│   ├── seed-markets.js       # Developer bootstrapping script
+│   └── calc-metrics.js       # Live contract metrics validator
+└── frontend/                 # Next.js App Router Web UI
+    ├── src/app/              # / (Markets), /agent (Metrics), /leaderboard, /claims
+    ├── src/components/       # Header, MarketsBrowser, PriceTicker, AgentFeed
+    └── public/               # Favicon assets and site manifest metadata
+```
+
+---
+
+## 🚦 Local Installation & Setup
+
+### Prerequisites
+* [Node.js v18+](https://nodejs.org)
+* [Foundry](https://book.getfoundry.sh/getting-started/installation) (for contract compiling)
+
+### 1. Clone & Build Contracts
 ```bash
-cd contracts
+git clone https://github.com/danielamodu/Pythia.git
+cd Pythia
 forge build
-forge script script/Deploy.s.sol --rpc-url https://dream-rpc.somnia.network --broadcast
 ```
 
-### 2. Frontend
+### 2. Configure Environment Variables
+Create a `.env` file in the root directory and the `frontend/` directory using the following values:
+```env
+PRIVATE_KEY="your-funded-wallet-private-key"
+NEXT_PUBLIC_SUPABASE_URL="your-supabase-url"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+```
+
+### 3. Launch Frontend Web App
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+Open [http://localhost:3000](http://localhost:3000) to view the client dashboard.
 
-### 3. Start the Autonomous Agent
-Ensure you have your `.env` configured with your wallet's `PRIVATE_KEY` funded with STT for agent deposits.
+### 4. Start the Off-chain Autonomous Agent
+To run the automated loop locally in demo-mode (fast 2-minute market expiration thresholds):
 ```bash
-node scripts/agent.js
+node scripts/agent.js --demo
 ```
-*The agent will run indefinitely, scanning news, creating markets, and resolving expired ones.*
 
-## 🏆 Hackathon Goals
-- [x] Prove on-chain LLM sentiment analysis can dictate protocol logic.
-- [x] Prove off-chain data can be autonomously ingested and verified via JSON API Agents.
-- [x] Create a sleek, premium UI demonstrating the future of Agent-Driven DeFi.
+---
+
+## 📸 Screenshots & UI
+
+*(Screenshots will be uploaded here showing the Sleek Dark Glassmorphic Theme, the Live Agent Feed, and the Betting Interface)*
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
