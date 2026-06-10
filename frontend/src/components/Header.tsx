@@ -47,8 +47,8 @@ function HeaderInner() {
         if (marketAddresses.length > 0) {
           const marketPromises = marketAddresses.map(async (address) => {
             const marketContract = new ethers.Contract(address, PREDICTION_MARKET_ABI, provider);
-            let yesVal = 0n;
-            let noVal = 0n;
+            let yesVal = BigInt(0);
+            let noVal = BigInt(0);
 
             try {
               const [yes, no, state] = await Promise.all([
