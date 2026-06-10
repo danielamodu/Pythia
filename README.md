@@ -6,7 +6,7 @@
 
 > **The first fully autonomous, end-to-end prediction market protocol powered entirely by the Somnia Network's Agentic L1 Architecture.**
 
-Live Demo: [pythia-danielamodu.vercel.app](https://pythia-danielamodu.vercel.app)  
+Live Demo: [pythiaxbt.vercel.app](https://pythiaxbt.vercel.app)  
 GitHub: [github.com/danielamodu/Pythia](https://github.com/danielamodu/Pythia)
 
 ---
