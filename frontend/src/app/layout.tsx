@@ -18,6 +18,18 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "Pythia | Autonomous Oracle",
   description: "Pythia is a continuous on-chain prediction market deployer powered by Somnia L1.",
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
+  manifest: '/site.webmanifest',
+  appleWebApp: {
+    title: 'Pythia',
+  },
 };
 
 import { Providers } from "./providers";
