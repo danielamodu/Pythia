@@ -34,7 +34,7 @@ const ASSETS_MAP: Record<string, string> = {
   "SOMI": "somnia"
 };
 
-export default function MarketsBrowser({ selectedAsset }: { selectedAsset: string | null }) {
+export default function MarketsBrowser({ selectedAsset, limit }: { selectedAsset: string | null; limit?: number }) {
   const [markets, setMarkets] = useState<MarketData[]>([]);
   const [selectedMarket, setSelectedMarket] = useState<{ market: MarketData, initialSide: "YES" | "NO" } | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
@@ -166,6 +166,7 @@ export default function MarketsBrowser({ selectedAsset }: { selectedAsset: strin
   };
 
   const filteredMarkets = getFilteredMarkets();
+  const displayedMarkets = limit ? filteredMarkets.slice(0, limit) : filteredMarkets;
 
   return (
     <div className={styles.container}>
@@ -184,12 +185,12 @@ export default function MarketsBrowser({ selectedAsset }: { selectedAsset: strin
       </div>
 
       <div className={styles.grid}>
-        {filteredMarkets.length === 0 && (
+        {displayedMarkets.length === 0 && (
           <div className={styles.emptyState}>
             NO MARKETS FOUND
           </div>
         )}
-        {filteredMarkets.map((market) => {
+        {displayedMarkets.map((market) => {
           const totalPool = parseFloat(market.totalYes) + parseFloat(market.totalNo);
           let yesProb = 50;
           let noProb = 50;

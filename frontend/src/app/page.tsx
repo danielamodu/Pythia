@@ -16,7 +16,7 @@ export default function Home() {
         
         <div style={{ padding: "40px" }}>
           <h2 style={{ fontSize: "2rem", fontWeight: "bold", marginBottom: "30px", paddingLeft: "20px" }}>Active Markets</h2>
-          <MarketsBrowser selectedAsset={selectedAsset} />
+          <MarketsBrowser selectedAsset={selectedAsset} limit={20} />
         </div>
       </main>
     </Suspense>
