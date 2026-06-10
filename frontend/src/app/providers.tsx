@@ -20,7 +20,7 @@ export const somniaTestnet = defineChain({
     symbol: "STT",
   },
   rpcUrls: {
-    default: { http: ["https://dream-rpc.somnia.network"] },
+    default: { http: ["https://api.infra.testnet.somnia.network/"] },
   },
   blockExplorers: {
     default: { name: "Somnia Explorer", url: "https://explorer.somnia.network" },

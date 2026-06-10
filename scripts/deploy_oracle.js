@@ -9,7 +9,7 @@ if (!process.env.PRIVATE_KEY) {
 
 const SOMNIA_PLATFORM = "0x037Bb9C718F3f7fe5eCBDB0b600D607b52706776";
 const MARKET_FACTORY = "0xAED91BD6bc2ca0AD1e002580b0B3d3B9CE2Ff54a";
-const RPC_URL = "https://dream-rpc.somnia.network";
+const RPC_URL = "https://api.infra.testnet.somnia.network/";
 
 async function main() {
   const privateKey = process.env.PRIVATE_KEY;
@@ -29,7 +29,12 @@ async function main() {
   const oracleFactory = new ethers.ContractFactory(oracleArtifact.abi, oracleArtifact.bytecode.object, wallet);
   
   console.log(`Deploying PythiaOracle with platform: ${SOMNIA_PLATFORM}...`);
-  const oracle = await oracleFactory.deploy(SOMNIA_PLATFORM);
+  const oracle = await oracleFactory.deploy(SOMNIA_PLATFORM, {
+    gasPrice: ethers.parseUnits("10", "gwei")
+  });
+  const deployTx = oracle.deploymentTransaction();
+  console.log(`Deployment transaction sent! Hash: ${deployTx.hash}`);
+  console.log("Waiting for confirmation on-chain...");
   await oracle.waitForDeployment();
   
   const oracleAddress = await oracle.getAddress();

@@ -3,8 +3,8 @@ const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 
-const RPC_URL = "https://dream-rpc.somnia.network";
-const ORACLE_ADDRESS = "0x153e324e6E7D65720da3dd947620C145a5a3f235";
+const RPC_URL = "https://api.infra.testnet.somnia.network/";
+const ORACLE_ADDRESS = "0x12E35f74A596020569A70c1159699140eaCBd425";
 
 async function main() {
   const privateKey = process.env.PRIVATE_KEY;
@@ -20,7 +20,12 @@ async function main() {
   const factoryFactory = new ethers.ContractFactory(factoryArtifact.abi, factoryArtifact.bytecode.object, wallet);
   
   console.log(`Deploying MarketFactory with oracle: ${ORACLE_ADDRESS}...`);
-  const marketFactory = await factoryFactory.deploy(ORACLE_ADDRESS, treasury);
+  const marketFactory = await factoryFactory.deploy(ORACLE_ADDRESS, treasury, {
+    gasPrice: ethers.parseUnits("10", "gwei")
+  });
+  const deployTx = marketFactory.deploymentTransaction();
+  console.log(`Deployment transaction sent! Hash: ${deployTx.hash}`);
+  console.log("Waiting for confirmation on-chain...");
   await marketFactory.waitForDeployment();
   
   const marketFactoryAddress = await marketFactory.getAddress();
@@ -32,8 +37,11 @@ async function main() {
   const oracle = new ethers.Contract(ORACLE_ADDRESS, oracleArtifact.abi, wallet);
   
   console.log(`Linking PythiaOracle to MarketFactory...`);
-  const tx = await oracle.setMarketFactory(marketFactoryAddress);
-  await tx.wait();
+  const linkTx = await oracle.setMarketFactory(marketFactoryAddress, {
+    gasPrice: ethers.parseUnits("10", "gwei")
+  });
+  console.log(`Linking transaction sent! Hash: ${linkTx.hash}`);
+  await linkTx.wait();
   console.log(`✅ Linked!`);
 
   // Update constants.ts

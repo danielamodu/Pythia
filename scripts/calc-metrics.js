@@ -2,7 +2,7 @@ const { ethers } = require("ethers");
 const fs = require("fs");
 const path = require("path");
 
-const RPC_URL = "https://dream-rpc.somnia.network";
+const RPC_URL = "https://api.infra.testnet.somnia.network/";
 const constantsPath = path.join(__dirname, "../frontend/src/utils/constants.ts");
 const constantsData = fs.readFileSync(constantsPath, "utf8");
 const factoryAddressMatch = constantsData.match(/export const MARKET_FACTORY_ADDRESS = "(0x[a-fA-F0-9]{40})";/);

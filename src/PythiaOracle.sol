@@ -256,5 +256,11 @@ contract PythiaOracle is IAgentRequesterHandler {
         IMarketFactory(marketFactory).createMarket{value: msg.value}(question, strikePrice, deadline, category, reasoningURI);
     }
 
+    /// @notice Force resolves a market in case of platform issues. Only callable by owner.
+    function forceResolveMarket(address marketAddress, bool _outcome) external {
+        require(msg.sender == owner, "Only owner can force resolve");
+        IPredictionMarket(marketAddress).resolve(_outcome);
+    }
+
     receive() external payable {}
 }

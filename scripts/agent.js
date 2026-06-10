@@ -85,7 +85,7 @@ function saveQuota(quota) {
 }
 
 // ─── MODULE-LEVEL SINGLETONS ─────────────────────────────────────────────────
-const rpcUrl = "https://dream-rpc.somnia.network";
+const rpcUrl = "https://api.infra.testnet.somnia.network/";
 const provider = new ethers.JsonRpcProvider(rpcUrl, 50312);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY || "", provider);
 
@@ -106,6 +106,7 @@ const oracleAbi = [
   "function createMarketViaFactory(string question, uint256 strikePrice, uint256 deadline, string category, string reasoningURI) external payable",
   "function scoreEvent(string memory eventDescription, string memory question, uint256 strikePrice, uint256 deadline, string memory category, string memory reasoningURI) external payable",
   "function requestResolution(address marketAddress) external payable",
+  "function forceResolveMarket(address marketAddress, bool _outcome) external",
   "event EventScoringRequested(uint256 requestId, string eventDescription)",
   "event EventScored(uint256 requestId, uint256 score)",
   "event ResolutionRequested(uint256 requestId, address market)",
@@ -245,7 +246,7 @@ async function runAgent() {
               deadline,
               req.dep.category,
               "ipfs://QmdummyFallbackHash",
-              { value: ethers.parseEther("0.005") }
+              { value: ethers.parseEther("0.005"), gasPrice: ethers.parseUnits("10", "gwei") }
             );
             const receipt = await tx.wait();
             
@@ -350,7 +351,7 @@ async function runAgent() {
 
         // Include reasoning in IPFS link dummy
         const reasoningURI = "ipfs://QmdummyHashForNow";
-        const tx = await oracle.scoreEvent(dep.reasonText, dep.question, dep.targetValue, dep.deadline, dep.category, reasoningURI, { value: deposit });
+        const tx = await oracle.scoreEvent(dep.reasonText, dep.question, dep.targetValue, dep.deadline, dep.category, reasoningURI, { value: deposit, gasPrice: ethers.parseUnits("10", "gwei") });
         const receipt = await tx.wait();
         
         let requestId = null;
@@ -402,7 +403,7 @@ async function runResolver() {
       // 1. If market is OPEN and deadline passed -> Close it
       if (state === 0n && now >= deadline) {
         logActivity("VERDICT", `Market deadline reached. Preparing to close: ${question}`);
-        const tx = await market.closeMarket();
+        const tx = await market.closeMarket({ gasPrice: ethers.parseUnits("10", "gwei") });
         await tx.wait();
         console.log(`✅ Closed market: ${question}`);
         continue;
@@ -423,25 +424,56 @@ async function runResolver() {
         }
 
         if (requestTime) {
-          console.log(`⚠️ Resolution request for ${question} timed out. Retrying on-chain request...`);
-          logActivity("RETRY_RESOLVE", `Resolution request timed out. Retrying on-chain request for: ${question}`, address);
+          console.log(`⚠️ Resolution request for ${question} timed out. Falling back to local direct resolution...`);
+          logActivity("RETRY_RESOLVE", `Resolution request timed out. Resolving via direct fallback for: ${question}`, address);
+          
+          try {
+            const prices = await fetchCryptoPrices();
+            const asset = parseAsset(question);
+            const livePrice = prices[asset ? asset.toLowerCase() : ""];
+            
+            if (livePrice !== null && livePrice !== undefined) {
+              const strike = Number(strikePrice);
+              const outcome = livePrice >= strike;
+              console.log(`[FALLBACK RESOLVED] Local price: $${livePrice}, Strike: $${strike} -> Outcome: ${outcome ? "YES" : "NO"}`);
+              logActivity("RESOLVE_FALLBACK", `Resolved via fallback. Local price $${livePrice} vs Strike $${strike} -> ${outcome ? "YES" : "NO"}`, address);
+              
+              const tx = await oracle.forceResolveMarket(address, outcome, {
+                gasPrice: ethers.parseUnits("10", "gwei")
+              });
+              await tx.wait();
+              console.log(`✅ Direct fallback resolution transaction confirmed!`);
+              pendingResolutions.delete(lowerAddress);
+            } else {
+              console.log(`[FALLBACK] CoinGecko price not available for ${asset}, retrying on-chain request.`);
+              const platformAbi = ["function getRequestDeposit() view returns (uint256)"];
+              const platformContract = new ethers.Contract("0x037Bb9C718F3f7fe5eCBDB0b600D607b52706776", platformAbi, provider);
+              const deposit = await platformContract.getRequestDeposit();
+              
+              pendingResolutions.set(lowerAddress, now);
+              const tx = await oracle.requestResolution(address, { value: deposit, gasPrice: ethers.parseUnits("10", "gwei") });
+              await tx.wait();
+            }
+          } catch (err) {
+            console.error("Direct fallback resolution failed:", err.message);
+          }
         } else {
           console.log(`\n⏳ Resolution Trigger: Requesting on-chain resolution via Somnia JSON API Agent for ${question}...`);
           logActivity("RESOLVER", `Requesting on-chain resolution via JSON API Agent for: ${question}`, address);
-        }
-        
-        try {
-          const platformAbi = ["function getRequestDeposit() view returns (uint256)"];
-          const platformContract = new ethers.Contract("0x037Bb9C718F3f7fe5eCBDB0b600D607b52706776", platformAbi, provider);
-          const deposit = await platformContract.getRequestDeposit();
           
-          pendingResolutions.set(lowerAddress, now);
-          const tx = await oracle.requestResolution(address, { value: deposit });
-          await tx.wait();
-          console.log(`✅ On-chain resolution request submitted successfully for market ${address}!`);
-        } catch (err) {
-          pendingResolutions.delete(lowerAddress);
-          console.error("Failed to request resolution via Oracle:", err.message);
+          try {
+            const platformAbi = ["function getRequestDeposit() view returns (uint256)"];
+            const platformContract = new ethers.Contract("0x037Bb9C718F3f7fe5eCBDB0b600D607b52706776", platformAbi, provider);
+            const deposit = await platformContract.getRequestDeposit();
+            
+            pendingResolutions.set(lowerAddress, now);
+            const tx = await oracle.requestResolution(address, { value: deposit, gasPrice: ethers.parseUnits("10", "gwei") });
+            await tx.wait();
+            console.log(`✅ On-chain resolution request submitted successfully for market ${address}!`);
+          } catch (err) {
+            pendingResolutions.delete(lowerAddress);
+            console.error("Failed to request resolution via Oracle:", err.message);
+          }
         }
       }
 
