@@ -17,7 +17,11 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 let supabase = null;
 if (supabaseUrl && supabaseKey) {
-  supabase = createClient(supabaseUrl, supabaseKey);
+  const ws = require("ws");
+  supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false },
+    realtime: { transport: ws }
+  });
 }
 
 function logActivity(type, message, marketAddress = null) {
@@ -99,15 +103,19 @@ const marketAbi = [
 ];
 
 const oracleAbi = [
-  "function createMarketViaFactory(string question, uint256 strikePrice, uint256 deadline) external payable",
+  "function createMarketViaFactory(string question, uint256 strikePrice, uint256 deadline, string category, string reasoningURI) external payable",
   "function scoreEvent(string memory eventDescription, string memory question, uint256 strikePrice, uint256 deadline, string memory category, string memory reasoningURI) external payable",
+  "function requestResolution(address marketAddress) external payable",
   "event EventScoringRequested(uint256 requestId, string eventDescription)",
   "event EventScored(uint256 requestId, uint256 score)",
+  "event ResolutionRequested(uint256 requestId, address market)",
+  "event PriceReceived(uint256 requestId, uint256 price)",
   "event MarketCreated(address market, string question, uint256 deadline)"
 ];
 const oracle = new ethers.Contract(oracleAddress, oracleAbi, wallet);
 
 const pendingRequests = new Map();
+const pendingResolutions = new Set();
 const isTestMode = process.argv.includes("--test");
 const isDemoMode = process.argv.includes("--demo");
 
@@ -187,6 +195,89 @@ async function runAgent() {
 
   try {
     const existingAddresses = await factory.getMarkets();
+    
+    // --- START POLLING MATCH & FALLBACK LOGIC ---
+    try {
+      for (const address of existingAddresses) {
+        let reasoningData = [];
+        if (fs.existsSync(reasoningPath)) {
+          try { reasoningData = JSON.parse(fs.readFileSync(reasoningPath, "utf8")); } catch(e) {}
+        }
+        const alreadySaved = reasoningData.some(r => r.marketAddress?.toLowerCase() === address.toLowerCase());
+        if (!alreadySaved) {
+          const m = new ethers.Contract(address, marketAbi, provider);
+          const q = await m.question();
+          
+          let matchedReqId = null;
+          for (const [id, req] of pendingRequests.entries()) {
+            if (req.dep.question === q) {
+              matchedReqId = id;
+              break;
+            }
+          }
+          
+          if (matchedReqId) {
+            const req = pendingRequests.get(matchedReqId);
+            console.log(`[POLLING MATCH] Found on-chain market for pending request: ${q} at ${address}`);
+            logActivity("DEPLOY", `New market deployed onchain: ${q}`, address);
+            saveReasoning(req.dep, req.reasoningData, address);
+            pendingRequests.delete(matchedReqId);
+          }
+        }
+      }
+
+      const nowSec = Math.floor(Date.now() / 1000);
+      for (const [id, req] of pendingRequests.entries()) {
+        if (req.createdAt && nowSec - req.createdAt > 90) {
+          console.log(`[POLLING TIMEOUT] Request ${id} timed out. Triggering direct creation fallback for: ${req.dep.question}`);
+          logActivity("FALLBACK", `LLM scoring callback timed out. Falling back to direct market creation.`);
+          try {
+            let deadline = req.dep.deadline;
+            const now = Math.floor(Date.now() / 1000);
+            if (deadline <= now + 60) {
+              deadline = isDemoMode ? now + 120 : now + 7 * 86400;
+              console.log(`[FALLBACK] Adjusted deadline from ${req.dep.deadline} to ${deadline} because the original deadline was in the past or too close.`);
+            }
+            const tx = await oracle.createMarketViaFactory(
+              req.dep.question,
+              req.dep.targetValue,
+              deadline,
+              req.dep.category,
+              "ipfs://QmdummyFallbackHash",
+              { value: ethers.parseEther("0.005") }
+            );
+            const receipt = await tx.wait();
+            
+            let marketAddress = null;
+            const factoryInterface = new ethers.Interface([
+              "event MarketCreated(address market, string question, uint256 deadline, string category, string reasoningURI)"
+            ]);
+            for (const log of receipt.logs) {
+              try {
+                const parsed = factoryInterface.parseLog(log);
+                if (parsed && parsed.name === "MarketCreated") {
+                  marketAddress = parsed.args.market;
+                  break;
+                }
+              } catch(e) {}
+            }
+            
+            if (marketAddress) {
+              console.log(`[FALLBACK SUCCESS] Directly deployed market at ${marketAddress}`);
+              logActivity("DEPLOY", `Deployed market (Fallback): ${req.dep.question}`, marketAddress);
+              saveReasoning(req.dep, req.reasoningData, marketAddress);
+            }
+          } catch (err) {
+            console.error("Direct creation fallback failed:", err.message);
+          }
+          pendingRequests.delete(id);
+        }
+      }
+    } catch (err) {
+      console.error("Polling event matcher error:", err.message);
+    }
+    // --- END POLLING MATCH & FALLBACK LOGIC ---
+
     const existingQuestions = new Set();
     const activeAssets = new Set();
     for (const address of existingAddresses) {
@@ -275,7 +366,11 @@ async function runAgent() {
            if (fs.existsSync(reasoningPath)) {
              try { reasoningData = JSON.parse(fs.readFileSync(reasoningPath, "utf8")); } catch(e) {}
            }
-           pendingRequests.set(requestId.toString(), { dep, reasoningData });
+           pendingRequests.set(requestId.toString(), { 
+             dep, 
+             reasoningData,
+             createdAt: Math.floor(Date.now() / 1000) 
+           });
            logActivity("LLM_EVAL", `Requested on-chain LLM validation for: "${dep.question}"`);
         }
       } catch (err) {
@@ -294,16 +389,16 @@ async function runResolver() {
   
   try {
     const marketAddresses = await factory.getMarkets();
-    const currentData = await fetchCryptoPrices();
 
     for (const address of marketAddresses) {
       const market = new ethers.Contract(address, marketAbi, wallet);
-      const [state, deadline, strikePrice, question] = await Promise.all([
-        market.state(), market.deadline(), market.strikePrice(), market.question()
+      const [state, deadline, question] = await Promise.all([
+        market.state(), market.deadline(), market.question()
       ]);
 
       const now = Math.floor(Date.now() / 1000);
 
+      // 1. If market is OPEN and deadline passed -> Close it
       if (state === 0n && now >= deadline) {
         logActivity("VERDICT", `Market deadline reached. Preparing to close: ${question}`);
         const tx = await market.closeMarket();
@@ -312,37 +407,57 @@ async function runResolver() {
         continue;
       }
 
+      // 2. If market is CLOSED -> Request onchain resolution via Somnia JSON API Agent
       if (state === 1n) {
-        logActivity("RESOLVER", `Fetching external API data to resolve: ${question}`);
-        
-        let outcome = false;
-        const asset = parseAsset(question);
-        if (asset) {
-          const idMap = { "BTC": "btc", "ETH": "eth", "SOL": "sol", "SOMI": "somi" };
-          const currentPrice = currentData[idMap[asset]];
-          if (currentPrice !== null) {
-            const numericStrike = Number(strikePrice);
-            outcome = currentPrice >= numericStrike;
-            console.log(`[RESOLVE] ${asset} Current Price: $${currentPrice} | Strike: $${numericStrike} -> ${outcome}`);
-            
-            const outcomeStr = outcome ? "YES" : "NO";
-            const tx = await market.resolve(outcome);
-            await tx.wait();
-            
-            logActivity("PAYOUT", `Resolved market: ${question} -> ${outcomeStr}. Distributing funds.`);
-            
-            let bettorCount = 0;
-            try {
-               const logs = await market.queryFilter(market.filters.BetPlaced());
-               const bettorsSet = new Set(logs.map(log => {
-                 const p = market.interface.parseLog({ topics: log.topics, data: log.data });
-                 return p ? p.args[0] : null;
-               }).filter(x => x));
-               bettorCount = bettorsSet.size;
-            } catch (e) {}
+        if (pendingResolutions.has(address.toLowerCase())) {
+          console.log(`[SKIP] Resolution already requested/pending for market: ${question}`);
+          continue;
+        }
 
-            updatePerformanceMetrics(address, outcome, bettorCount, "PRICE");
-          }
+        console.log(`\n⏳ Resolution Trigger: Requesting on-chain resolution via Somnia JSON API Agent for ${question}...`);
+        logActivity("RESOLVER", `Requesting on-chain resolution via JSON API Agent for: ${question}`, address);
+        
+        try {
+          const platformAbi = ["function getRequestDeposit() view returns (uint256)"];
+          const platformContract = new ethers.Contract("0x037Bb9C718F3f7fe5eCBDB0b600D607b52706776", platformAbi, provider);
+          const deposit = await platformContract.getRequestDeposit();
+          
+          pendingResolutions.add(address.toLowerCase());
+          const tx = await oracle.requestResolution(address, { value: deposit });
+          await tx.wait();
+          console.log(`✅ On-chain resolution request submitted successfully for market ${address}!`);
+        } catch (err) {
+          pendingResolutions.delete(address.toLowerCase());
+          console.error("Failed to request resolution via Oracle:", err.message);
+        }
+      }
+
+      // 3. If market is RESOLVED -> Check and log performance metrics if newly resolved
+      if (state === 2n) {
+        pendingResolutions.delete(address.toLowerCase());
+        let perfData = { categoryStats: {}, resolvedMarkets: [] };
+        if (fs.existsSync(perfPath)) {
+          try { perfData = JSON.parse(fs.readFileSync(perfPath, "utf8")); } catch(e) {}
+        }
+        const alreadyTracked = perfData.resolvedMarkets.some(x => x.marketAddress.toLowerCase() === address.toLowerCase());
+        if (!alreadyTracked) {
+          console.log(`[RESOLVED] Detected newly resolved market on-chain: ${question}`);
+          const outcomeVal = await market.outcome();
+          const outcomeStr = outcomeVal ? "YES" : "NO";
+          
+          logActivity("PAYOUT", `Market resolved on-chain: ${question} -> ${outcomeStr}. Distributing funds.`, address);
+          
+          let bettorCount = 0;
+          try {
+             const logs = await market.queryFilter(market.filters.BetPlaced());
+             const bettorsSet = new Set(logs.map(log => {
+               const p = market.interface.parseLog({ topics: log.topics, data: log.data });
+               return p ? p.args[0] : null;
+             }).filter(x => x));
+             bettorCount = bettorsSet.size;
+          } catch (e) {}
+
+          updatePerformanceMetrics(address, outcomeVal, bettorCount, "PRICE");
         }
       }
     }
@@ -407,6 +522,21 @@ oracle.on("MarketCreated", (marketAddr, question, deadline) => {
     console.log(`[SUCCESS] Matched market ${marketAddr} to request ${matchedReqId} and saved reasoning.`);
   } else {
     console.log(`[WARNING] Could not match MarketCreated event to any pending request for question: ${question}`);
+  }
+});
+
+oracle.on("ResolutionRequested", (requestId, market) => {
+  console.log(`\n[EVENT RECEIVED] ResolutionRequested for market ${market} (ID: ${requestId})`);
+  logActivity("RESOLVER_REQ", `Requested onchain resolution via JSON API agent for: ${market}`, market);
+});
+
+oracle.on("PriceReceived", (requestId, price) => {
+  console.log(`\n[EVENT RECEIVED] PriceReceived for request ${requestId}: price ${price.toString()}`);
+  try {
+    const formattedPrice = parseFloat(ethers.formatUnits(price, 8)).toLocaleString();
+    logActivity("RESOLVER_RES", `Onchain Price API returned: $${formattedPrice}`, null);
+  } catch (e) {
+    logActivity("RESOLVER_RES", `Onchain Price API returned raw value: ${price.toString()}`, null);
   }
 });
 

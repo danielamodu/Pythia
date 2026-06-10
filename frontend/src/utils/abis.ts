@@ -1,7 +1,8 @@
 export const MARKET_FACTORY_ABI = [
   "function getMarkets() external view returns (address[] memory)",
   "function getMarketCount() external view returns (uint256)",
-  "event MarketCreated(address market, string question, uint256 deadline)"
+  "function createMarket(string question, uint256 strikePrice, uint256 deadline, string category, string reasoningURI) external payable",
+  "event MarketCreated(address market, string question, uint256 deadline, string category, string reasoningURI)"
 ];
 
 export const PREDICTION_MARKET_ABI = [
@@ -24,12 +25,11 @@ export const PREDICTION_MARKET_ABI = [
 ];
 
 export const PYTHIA_ORACLE_ABI = [
-  "function requestPriceFetch(string calldata url, string calldata jsonPath) external payable",
-  "function scoreEvent(string memory eventDescription, string memory question, uint256 strikePrice, uint256 deadline) external payable",
-  "function createMarketIfScoreHigh(uint256 requestId) external payable",
-  "function eventScores(uint256) view returns (uint256)",
-  "event PriceRequested(uint256 requestId, string url)",
-  "event PriceReceived(uint256 requestId, uint256 price)",
+  "function scoreEvent(string eventDescription, string question, uint256 strikePrice, uint256 deadline, string category, string reasoningURI) external payable",
+  "function requestResolution(address marketAddress) external payable",
+  "function setMarketFactory(address _factory) external",
   "event EventScoringRequested(uint256 requestId, string eventDescription)",
-  "event EventScored(uint256 requestId, uint256 score)"
+  "event EventScored(uint256 requestId, uint256 score)",
+  "event ResolutionRequested(uint256 requestId, address market)",
+  "event PriceReceived(uint256 requestId, uint256 price)"
 ];
