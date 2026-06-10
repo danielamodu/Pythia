@@ -286,7 +286,7 @@ async function runAgent() {
       try { 
         const q = await m.question();
         const state = await m.state();
-        if (Number(state) === 0 || Number(state) === 1) { // Track OPEN and CLOSED markets as active
+        if (Number(state) === 0) { // Track only OPEN markets as active so closed ones don't block new deployments
           existingQuestions.add(q);
           const a = parseAsset(q);
           if (a) activeAssets.add(a);

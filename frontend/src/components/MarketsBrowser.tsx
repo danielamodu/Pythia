@@ -123,7 +123,7 @@ export default function MarketsBrowser({ selectedAsset }: { selectedAsset: strin
             outcome,
             confidence: marketReasoning?.confidence,
             reasoning: marketReasoning?.reasoning,
-            type: marketReasoning?.type || "PRICE",
+            type: marketReasoning?.category || marketReasoning?.type || "PRICE",
             uniqueBettors,
             bets
           };
