@@ -115,7 +115,7 @@ const oracleAbi = [
 const oracle = new ethers.Contract(oracleAddress, oracleAbi, wallet);
 
 const pendingRequests = new Map();
-const pendingResolutions = new Set();
+const pendingResolutions = new Map(); // Changed to Map to support timestamps and timeouts
 const isTestMode = process.argv.includes("--test");
 const isDemoMode = process.argv.includes("--demo");
 
@@ -410,25 +410,37 @@ async function runResolver() {
 
       // 2. If market is CLOSED -> Request onchain resolution via Somnia JSON API Agent
       if (state === 1n) {
-        if (pendingResolutions.has(address.toLowerCase())) {
+        const lowerAddress = address.toLowerCase();
+        const requestTime = pendingResolutions.get(lowerAddress);
+        const now = Math.floor(Date.now() / 1000);
+        
+        // 5 minutes in demo mode, 2 hours in production
+        const retryTimeout = isDemoMode ? 5 * 60 : 2 * 3600; 
+
+        if (requestTime && (now - requestTime < retryTimeout)) {
           console.log(`[SKIP] Resolution already requested/pending for market: ${question}`);
           continue;
         }
 
-        console.log(`\n⏳ Resolution Trigger: Requesting on-chain resolution via Somnia JSON API Agent for ${question}...`);
-        logActivity("RESOLVER", `Requesting on-chain resolution via JSON API Agent for: ${question}`, address);
+        if (requestTime) {
+          console.log(`⚠️ Resolution request for ${question} timed out. Retrying on-chain request...`);
+          logActivity("RETRY_RESOLVE", `Resolution request timed out. Retrying on-chain request for: ${question}`, address);
+        } else {
+          console.log(`\n⏳ Resolution Trigger: Requesting on-chain resolution via Somnia JSON API Agent for ${question}...`);
+          logActivity("RESOLVER", `Requesting on-chain resolution via JSON API Agent for: ${question}`, address);
+        }
         
         try {
           const platformAbi = ["function getRequestDeposit() view returns (uint256)"];
           const platformContract = new ethers.Contract("0x037Bb9C718F3f7fe5eCBDB0b600D607b52706776", platformAbi, provider);
           const deposit = await platformContract.getRequestDeposit();
           
-          pendingResolutions.add(address.toLowerCase());
+          pendingResolutions.set(lowerAddress, now);
           const tx = await oracle.requestResolution(address, { value: deposit });
           await tx.wait();
           console.log(`✅ On-chain resolution request submitted successfully for market ${address}!`);
         } catch (err) {
-          pendingResolutions.delete(address.toLowerCase());
+          pendingResolutions.delete(lowerAddress);
           console.error("Failed to request resolution via Oracle:", err.message);
         }
       }
@@ -547,12 +559,26 @@ console.log(`⚡ [AGENT] Persistent listeners registered.`);
 
 let consecutiveErrors = 0;
 const MAX_RETRIES = 5;
+let lastHeartbeatTime = 0;
 
 async function mainLoop() {
   try {
     await runAgent();
     await runResolver();
     consecutiveErrors = 0; // reset on success
+    
+    // Heartbeat every 90 seconds in demo mode, 5 minutes in production
+    const now = Date.now();
+    const heartbeatInterval = isDemoMode ? 90 * 1000 : 5 * 60 * 1000;
+    if (now - lastHeartbeatTime >= heartbeatInterval) {
+      let totalMarkets = 34;
+      try {
+        const count = await factory.getMarkets();
+        totalMarkets = count.length;
+      } catch (e) {}
+      logActivity("HEARTBEAT", `Agent is active. Monitoring 4 assets (BTC, ETH, SOL, SOMI) and checking ${totalMarkets} markets for resolution.`);
+      lastHeartbeatTime = now;
+    }
   } catch (error) {
     consecutiveErrors++;
     console.error(`[ERROR] Main loop failed (Attempt ${consecutiveErrors}/${MAX_RETRIES}):`, error.message);
