@@ -147,8 +147,23 @@ contract PythiaOracle is IAgentRequesterHandler {
         string memory url;
         string memory jsonPath;
 
-        // Basic parsing to figure out the asset
-        if (_contains(question, "BTC")) {
+        // Basic parsing to figure out the metric
+        if (_contains(question, "Fear & Greed") || _contains(question, "sentiment") || _contains(question, "Index")) {
+            url = "https://api.alternative.me/fng/?limit=1";
+            jsonPath = "data.0.value";
+        } else if (_contains(question, "TPS") || _contains(question, "tps")) {
+            url = "https://explorer.somnia.network/api/v2/stats";
+            jsonPath = "average_tps";
+        } else if (_contains(question, "contracts") || _contains(question, "smart contracts")) {
+            url = "https://explorer.somnia.network/api/v2/stats";
+            jsonPath = "smart_contracts_count";
+        } else if (_contains(question, "gas") || _contains(question, "Gas")) {
+            url = "https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=ZEIYK7YSJ3QTPKWVND32NWDJWNESW85S9V";
+            jsonPath = "result.ProposeGasPrice";
+        } else if (_contains(question, "dominance") || _contains(question, "Dominance")) {
+            url = "https://api.coingecko.com/api/v3/global";
+            jsonPath = "data.market_cap_percentage.btc";
+        } else if (_contains(question, "BTC")) {
             url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
             jsonPath = "bitcoin.usd";
         } else if (_contains(question, "ETH")) {

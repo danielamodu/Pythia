@@ -157,6 +157,10 @@ export default function MarketsBrowser({ selectedAsset, limit }: { selectedAsset
       // Tab filtering
       if (activeFilter === "OPEN") return m.state === 0;
       if (activeFilter === "RESOLVED") return m.state === 2;
+
+      // Filter resolved markets out of all other tabs
+      if (m.state === 2) return false;
+
       if (activeFilter === "CORRELATION") return m.type === "CORRELATION";
       if (activeFilter === "PRICE") return m.type === "PRICE";
       if (activeFilter === "VOLUME") return m.type === "VOLUME";

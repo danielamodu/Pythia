@@ -67,13 +67,15 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
 
 function getQuota() {
   const today = new Date().toISOString().split("T")[0];
-  let quota = { date: today, counts: { PRICE: 0, CORRELATION: 0, VOLUME: 0 }, lastMetaTime: 0 };
+  let quota = { date: today, counts: { PRICE: 0, CORRELATION: 0, VOLUME: 0, SENTIMENT: 0, DOMINANCE: 0, GAS: 0, SOMNIA: 0, META: 0 }, lastMetaTime: 0 };
   if (fs.existsSync(quotaPath)) {
     try {
       const saved = JSON.parse(fs.readFileSync(quotaPath, "utf8"));
       if (saved.date === today) {
         quota = { ...quota, ...saved };
         quota.counts = { ...quota.counts, ...saved.counts };
+      } else {
+        quota.lastMetaTime = saved.lastMetaTime || 0;
       }
     } catch(e) {}
   }
@@ -97,8 +99,13 @@ const marketAbi = [
   "function state() view returns (uint8)",
   "function deadline() view returns (uint256)",
   "function strikePrice() view returns (uint256)",
+  "function totalYes() view returns (uint256)",
+  "function totalNo() view returns (uint256)",
   "function closeMarket() external",
   "function resolve(bool outcome) external",
+  "function hasClaimed(address) view returns (bool)",
+  "function claimWinnings() external",
+  "function resolvedAt() view returns (uint256)",
   "event BetPlaced(address indexed user, bool outcome, uint256 amount)"
 ];
 
@@ -120,8 +127,13 @@ const pendingResolutions = new Map(); // Changed to Map to support timestamps an
 const isTestMode = process.argv.includes("--test");
 const isDemoMode = process.argv.includes("--demo");
 
-async function fetchCryptoPrices() {
-  const data = { btc: null, eth: null, sol: null, somi: null };
+async function fetchAllData() {
+  const data = {
+    btc: null, eth: null, sol: null, somi: null,
+    fng: null, btcDominance: null, ethGas: null,
+    somniaStats: null
+  };
+
   try {
     const res = await fetchWithTimeout("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,somnia&vs_currencies=usd");
     const json = await res.json();
@@ -132,7 +144,127 @@ async function fetchCryptoPrices() {
   } catch (e) {
     console.log(`[${new Date().toISOString()}] CoinGecko Prices failed: ${e.message}`);
   }
+
+  try {
+    const res = await fetchWithTimeout("https://api.alternative.me/fng/?limit=2");
+    const json = await res.json();
+    if (json && json.data && json.data.length > 0) {
+      data.fng = parseInt(json.data[0].value);
+    }
+  } catch (e) {
+    console.log(`[${new Date().toISOString()}] F&G API failed: ${e.message}`);
+  }
+
+  try {
+    const res = await fetchWithTimeout("https://api.coingecko.com/api/v3/global");
+    const json = await res.json();
+    if (json && json.data && json.data.market_cap_percentage) {
+      data.btcDominance = json.data.market_cap_percentage.btc;
+    }
+  } catch (e) {
+    console.log(`[${new Date().toISOString()}] CoinGecko Global failed: ${e.message}`);
+  }
+
+  if (process.env.ETHERSCAN_API_KEY) {
+    try {
+      const res = await fetchWithTimeout(`https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=${process.env.ETHERSCAN_API_KEY}`);
+      const json = await res.json();
+      if (json && json.result && json.result.ProposeGasPrice) {
+        data.ethGas = parseFloat(json.result.ProposeGasPrice);
+      }
+    } catch (e) {
+      console.log(`[${new Date().toISOString()}] Etherscan API failed: ${e.message}`);
+    }
+  } else {
+    // Testnet / public fallback key if not set
+    try {
+      const res = await fetchWithTimeout("https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=ZEIYK7YSJ3QTPKWVND32NWDJWNESW85S9V");
+      const json = await res.json();
+      if (json && json.result && json.result.ProposeGasPrice) {
+        data.ethGas = parseFloat(json.result.ProposeGasPrice);
+      }
+    } catch (e) {
+      console.log(`[${new Date().toISOString()}] Gas fallback API failed: ${e.message}`);
+    }
+  }
+
+  try {
+    const res = await fetchWithTimeout("https://explorer.somnia.network/api/v2/stats");
+    const json = await res.json();
+    data.somniaStats = {
+      tps: parseFloat(json.average_tps || json.tps || 0),
+      contracts: parseInt(json.smart_contracts_count || json.total_smart_contracts || 0),
+      addresses: parseInt(json.active_addresses_24h || json.total_addresses || 0)
+    };
+  } catch (e) {
+    console.log(`[${new Date().toISOString()}] Somnia Explorer API failed: ${e.message}`);
+  }
+
   return data;
+}
+
+async function fetchFallbackValue(question) {
+  if (question.includes("Fear & Greed") || question.includes("sentiment") || question.includes("Index")) {
+    try {
+      const res = await fetchWithTimeout("https://api.alternative.me/fng/?limit=1");
+      const json = await res.json();
+      if (json && json.data && json.data.length > 0) {
+        return parseInt(json.data[0].value);
+      }
+    } catch (e) {
+      console.log(`[FALLBACK] Failed to fetch Fear & Greed: ${e.message}`);
+    }
+  } else if (question.includes("TPS") || question.includes("tps")) {
+    try {
+      const res = await fetchWithTimeout("https://explorer.somnia.network/api/v2/stats");
+      const json = await res.json();
+      return parseFloat(json.average_tps || json.tps || 0);
+    } catch (e) {
+      console.log(`[FALLBACK] Failed to fetch TPS: ${e.message}`);
+    }
+  } else if (question.includes("contracts") || question.includes("smart contracts")) {
+    try {
+      const res = await fetchWithTimeout("https://explorer.somnia.network/api/v2/stats");
+      const json = await res.json();
+      return parseInt(json.smart_contracts_count || json.total_smart_contracts || 0);
+    } catch (e) {
+      console.log(`[FALLBACK] Failed to fetch smart contracts count: ${e.message}`);
+    }
+  } else if (question.includes("gas") || question.includes("Gas")) {
+    try {
+      const res = await fetchWithTimeout("https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=ZEIYK7YSJ3QTPKWVND32NWDJWNESW85S9V");
+      const json = await res.json();
+      if (json && json.result && json.result.ProposeGasPrice) {
+        return parseFloat(json.result.ProposeGasPrice);
+      }
+    } catch (e) {
+      console.log(`[FALLBACK] Failed to fetch Gas price: ${e.message}`);
+    }
+  } else if (question.includes("dominance") || question.includes("Dominance")) {
+    try {
+      const res = await fetchWithTimeout("https://api.coingecko.com/api/v3/global");
+      const json = await res.json();
+      if (json && json.data && json.data.market_cap_percentage) {
+        return json.data.market_cap_percentage.btc;
+      }
+    } catch (e) {
+      console.log(`[FALLBACK] Failed to fetch BTC dominance: ${e.message}`);
+    }
+  } else {
+    const asset = parseAsset(question);
+    if (asset) {
+      try {
+        const prices = await fetchAllData();
+        const livePrice = prices[asset.toLowerCase()];
+        if (livePrice !== null && livePrice !== undefined) {
+          return livePrice;
+        }
+      } catch (e) {
+        console.log(`[FALLBACK] Failed to fetch price for ${asset}: ${e.message}`);
+      }
+    }
+  }
+  return null;
 }
 
 function parseAsset(question) {
@@ -295,22 +427,114 @@ async function runAgent() {
       } catch (e) {}
     }
 
-    for (const req of pendingRequests.values()) {
-      const a = parseAsset(req.dep.question);
-      if (a) activeAssets.add(a);
-    }
-
     const pendingDeployments = [];
     
-    // FETCH LIVE DATA
-    const currentData = await fetchCryptoPrices();
+    // FETCH LIVE DATA & UPDATE HISTORY
+    let history = { btc: [], eth: [], sol: [], somi: [], fng: [], btcDominance: [], ethGas: [], somniaStats: [] };
+    if (fs.existsSync(historyPath)) {
+      try {
+        const parsed = JSON.parse(fs.readFileSync(historyPath, "utf8"));
+        if (!Array.isArray(parsed)) {
+          history = { ...history, ...parsed };
+        }
+      } catch (e) {}
+    }
+
+    const currentData = await fetchAllData();
+    Object.keys(history).forEach(key => {
+      if (!history[key]) history[key] = [];
+      history[key].push(currentData[key]);
+      if (history[key].length > 96) history[key].shift();
+    });
+    fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
+
+    const deadline = isDemoMode ? Math.floor(Date.now() / 1000) + 120 : Math.floor(Date.now() / 1000) + 7 * 86400;
+    const daysStr = isDemoMode ? "2 mins" : "7 days";
+
+    function queueMarket(dep) {
+      if (!existingQuestions.has(dep.question) && (localCounts[dep.category] || 0) < (isDemoMode ? 100 : 20)) {
+        pendingDeployments.push({
+          ...dep,
+          dynamicStrike: dep.targetValue,
+          dynamicDeadline: isDemoMode ? 0 : 7,
+          macroScore: 0,
+          macroSentiment: "NEUTRAL",
+          signalCount: 0,
+          signals: [],
+          categoryWeight: 1.0,
+          adjustedConfidence: dep.confidence
+        });
+        localCounts[dep.category] = (localCounts[dep.category] || 0) + 1;
+        existingQuestions.add(dep.question);
+      }
+    }
+
+    // 1. SOMNIA Metrics (TPS, contracts)
+    if (currentData.somniaStats) {
+      // a) TPS
+      const tpsThreshold = isDemoMode ? 0.1 : 10000;
+      if (currentData.somniaStats.tps > tpsThreshold) {
+        queueMarket({
+          question: `Will Somnia average TPS exceed ${tpsThreshold} this week?`,
+          targetValue: tpsThreshold, deadline, category: "SOMNIA", dataSource: "somnia-explorer",
+          confidence: 85, reasonText: `Somnia TPS reached ${currentData.somniaStats.tps.toFixed(2)}. High network activity detected.`
+        });
+      }
+      // b) Deployed Contracts
+      const contractsThreshold = isDemoMode ? 10 : 500;
+      if (currentData.somniaStats.contracts > contractsThreshold) {
+        queueMarket({
+          question: `Will Somnia surpass ${contractsThreshold} deployed contracts this week?`,
+          targetValue: contractsThreshold, deadline, category: "SOMNIA", dataSource: "somnia-explorer",
+          confidence: 85, reasonText: `Somnia contracts reached ${currentData.somniaStats.contracts}. Ecosystem expansion detected.`
+        });
+      }
+    }
+
+    // 2. SENTIMENT (Fear & Greed Index)
+    if (currentData.fng !== null) {
+      const fngThreshold = isDemoMode ? 50 : 70;
+      if (currentData.fng >= fngThreshold) {
+        queueMarket({
+          question: `Will the Crypto Fear & Greed Index exceed ${fngThreshold} (Greed) in ${daysStr}?`,
+          targetValue: fngThreshold, deadline, category: "SENTIMENT", dataSource: "alternative.me",
+          confidence: 80, reasonText: `Fear & Greed Index currently at ${currentData.fng}, showing strong sentiment.`
+        });
+      }
+    }
+
+    // 3. DOMINANCE (BTC Dominance)
+    if (currentData.btcDominance !== null) {
+      const domThreshold = isDemoMode ? 40 : 55;
+      if (currentData.btcDominance >= domThreshold) {
+        queueMarket({
+          question: `Will BTC dominance exceed ${domThreshold}% in ${daysStr}?`,
+          targetValue: domThreshold, deadline, category: "DOMINANCE", dataSource: "coingecko",
+          confidence: 75, reasonText: `BTC dominance is currently at ${currentData.btcDominance.toFixed(1)}%.`
+        });
+      }
+    }
+
+    // 4. GAS (ETH gas proposal)
+    if (currentData.ethGas !== null) {
+      const gasThreshold = isDemoMode ? 1 : 20;
+      if (currentData.ethGas >= gasThreshold) {
+        queueMarket({
+          question: `Will ETH gas exceed ${gasThreshold} gwei in ${daysStr}?`,
+          targetValue: gasThreshold, deadline, category: "GAS", dataSource: "etherscan",
+          confidence: 85, reasonText: `ETH gas proposal is currently at ${currentData.ethGas} gwei.`
+        });
+      }
+    }
+
+    // 5. PRICE, CORRELATION, VOLUME asset predictions
     const priceAssets = [
       { key: "btc", name: "BTC", multipliers: [1.02, 1.05], category: "PRICE", reasonTemplate: (c, s) => `BTC is currently at $${c.toLocaleString()}. Proposing a ${s}% upside market based on volatility profile.` },
       { key: "eth", name: "ETH", multipliers: [1.02, 1.05], category: "CORRELATION", reasonTemplate: (c, s) => `ETH is currently at $${c.toLocaleString()}. Correlation analysis with BTC suggests a synchronized ${s}% upside breakout.` },
       { key: "sol", name: "SOL", multipliers: [1.02, 1.05], category: "VOLUME", reasonTemplate: (c, s) => `SOL is currently at $${c.toLocaleString()}. High trading volume profile indicates momentum toward a ${s}% target.` },
       { key: "somi", name: "SOMI", multipliers: [1.02, 1.05], category: "PRICE", reasonTemplate: (c, s) => `SOMI is currently at $${c.toLocaleString()}. Volatility pricing models project a ${s}% range expansion.` },
     ];
-    
+
     for (const asset of priceAssets) {
       if (activeAssets.has(asset.name)) {
         console.log(`[SKIP] An open or pending market for ${asset.name} already exists.`);
@@ -322,24 +546,31 @@ async function runAgent() {
       
       const strikeMultiplier = asset.multipliers[Math.floor(Math.random() * asset.multipliers.length)];
       const strike = Math.round(curr * strikeMultiplier);
-      const days = isDemoMode ? "2 mins" : "7 days";
-      const deadline = isDemoMode ? Math.floor(Date.now() / 1000) + 120 : Math.floor(Date.now() / 1000) + 7 * 86400;
-      
-      const question = `Will ${asset.name} exceed $${strike.toLocaleString()} in ${days}?`;
-      const category = asset.category;
       const pct = ((strikeMultiplier - 1) * 100).toFixed(0);
       const reasonText = asset.reasonTemplate(curr, pct);
-      
-      if (!existingQuestions.has(question) && (localCounts[category] || 0) < (isDemoMode ? 100 : 20)) {
-        pendingDeployments.push({
-          question, targetValue: strike, deadline, category, dataSource: "coingecko",
-          confidence: 75,
-          reasonText,
-          dynamicStrike: strike, dynamicDeadline: isDemoMode ? 0 : 7, macroScore: 0, macroSentiment: "NEUTRAL", signalCount: 0, signals: [],
-          categoryWeight: 1.0, adjustedConfidence: 75
+      const question = `Will ${asset.name} exceed $${strike.toLocaleString()} in ${daysStr}?`;
+
+      queueMarket({
+        question, targetValue: strike, deadline, category: asset.category, dataSource: "coingecko",
+        confidence: 75, reasonText
+      });
+    }
+
+    // 6. META predictions (Pythia self evaluation)
+    const nowTime = Date.now();
+    const oneWeek = 7 * 24 * 60 * 60 * 1000;
+    if (nowTime - quota.lastMetaTime > oneWeek) {
+      let createdThisWeek = 0;
+      for (const item of reasoningData) {
+        if (nowTime - (item.timestamp * 1000) < oneWeek) createdThisWeek++;
+      }
+      if (createdThisWeek > 0) {
+        queueMarket({
+          question: `Will Pythia create more than 20 markets this week?`,
+          targetValue: 20, deadline, category: "META", dataSource: "internal",
+          confidence: 90, reasonText: `Pythia has already created ${createdThisWeek} markets this week. Self-evaluating performance.`
         });
-        localCounts[category] = (localCounts[category] || 0) + 1;
-        existingQuestions.add(question);
+        quota.lastMetaTime = nowTime;
       }
     }
 
@@ -397,8 +628,8 @@ async function runResolver() {
 
     for (const address of marketAddresses) {
       const market = new ethers.Contract(address, marketAbi, wallet);
-      const [state, deadline, question] = await Promise.all([
-        market.state(), market.deadline(), market.question()
+      const [state, deadline, question, strikePrice] = await Promise.all([
+        market.state(), market.deadline(), market.question(), market.strikePrice()
       ]);
 
       const now = Math.floor(Date.now() / 1000);
@@ -431,15 +662,13 @@ async function runResolver() {
           logActivity("RETRY_RESOLVE", `Resolution request timed out. Resolving via direct fallback for: ${question}`, address);
           
           try {
-            const prices = await fetchCryptoPrices();
-            const asset = parseAsset(question);
-            const livePrice = prices[asset ? asset.toLowerCase() : ""];
+            const liveValue = await fetchFallbackValue(question);
             
-            if (livePrice !== null && livePrice !== undefined) {
+            if (liveValue !== null && liveValue !== undefined) {
               const strike = Number(strikePrice);
-              const outcome = livePrice >= strike;
-              console.log(`[FALLBACK RESOLVED] Local price: $${livePrice}, Strike: $${strike} -> Outcome: ${outcome ? "YES" : "NO"}`);
-              logActivity("RESOLVE_FALLBACK", `Resolved via fallback. Local price $${livePrice} vs Strike $${strike} -> ${outcome ? "YES" : "NO"}`, address);
+              const outcome = liveValue >= strike;
+              console.log(`[FALLBACK RESOLVED] Local value: ${liveValue}, Strike: ${strike} -> Outcome: ${outcome ? "YES" : "NO"}`);
+              logActivity("RESOLVE_FALLBACK", `Resolved via fallback. Local value ${liveValue} vs Strike ${strike} -> ${outcome ? "YES" : "NO"}`, address);
               
               const tx = await oracle.forceResolveMarket(address, outcome, {
                 gasPrice: ethers.parseUnits("10", "gwei")
@@ -448,7 +677,7 @@ async function runResolver() {
               console.log(`✅ Direct fallback resolution transaction confirmed!`);
               pendingResolutions.delete(lowerAddress);
             } else {
-              console.log(`[FALLBACK] CoinGecko price not available for ${asset}, retrying on-chain request.`);
+              console.log(`[FALLBACK] Live value not available for question "${question}", retrying on-chain request.`);
               const platformAbi = ["function getRequestDeposit() view returns (uint256)"];
               const platformContract = new ethers.Contract("0x037Bb9C718F3f7fe5eCBDB0b600D607b52706776", platformAbi, provider);
               const deposit = await platformContract.getRequestDeposit();
@@ -480,7 +709,7 @@ async function runResolver() {
         }
       }
 
-      // 3. If market is RESOLVED -> Check and log performance metrics if newly resolved
+      // 3. If market is RESOLVED -> Check and log performance metrics if newly resolved, and auto-claim winnings
       if (state === 2n) {
         pendingResolutions.delete(address.toLowerCase());
         let perfData = { categoryStats: {}, resolvedMarkets: [] };
@@ -488,6 +717,16 @@ async function runResolver() {
           try { perfData = JSON.parse(fs.readFileSync(perfPath, "utf8")); } catch(e) {}
         }
         const alreadyTracked = perfData.resolvedMarkets.some(x => x.marketAddress.toLowerCase() === address.toLowerCase());
+        
+        let category = "PRICE";
+        if (fs.existsSync(reasoningPath)) {
+          try {
+            const reasoning = JSON.parse(fs.readFileSync(reasoningPath, "utf8"));
+            const r = reasoning.find(x => x.marketAddress?.toLowerCase() === address.toLowerCase() || x.question === question);
+            if (r && r.category) category = r.category;
+          } catch(e) {}
+        }
+
         if (!alreadyTracked) {
           console.log(`[RESOLVED] Detected newly resolved market on-chain: ${question}`);
           const outcomeVal = await market.outcome();
@@ -505,7 +744,30 @@ async function runResolver() {
              bettorCount = bettorsSet.size;
           } catch (e) {}
 
-          updatePerformanceMetrics(address, outcomeVal, bettorCount, "PRICE");
+          updatePerformanceMetrics(address, outcomeVal, bettorCount, category);
+        }
+
+        // Auto-claim agent winnings
+        try {
+          const hasClaimed = await market.hasClaimed(wallet.address);
+          if (!hasClaimed) {
+            const resolvedAt = await market.resolvedAt();
+            const now = Math.floor(Date.now() / 1000);
+            
+            // 24 hours dispute period. 
+            if (now >= Number(resolvedAt) + 24 * 3600) {
+              console.log(`[CLAIMING] Auto-claiming agent winnings for resolved market: ${question}`);
+              logActivity("CLAIM", `Auto-claiming agent winnings for resolved market: ${question}`, address);
+              const tx = await market.claimWinnings({ gasPrice: ethers.parseUnits("10", "gwei") });
+              await tx.wait();
+              console.log(`✅ Claim winnings transaction confirmed for market ${address}!`);
+            } else {
+              const secondsLeft = (Number(resolvedAt) + 24 * 3600) - now;
+              console.log(`[CLAIM SKIP] Dispute period active for market ${address}. ${Math.round(secondsLeft / 60)} minutes remaining.`);
+            }
+          }
+        } catch (err) {
+          console.error(`Auto-claiming winnings failed for market ${address}:`, err.message);
         }
       }
     }
