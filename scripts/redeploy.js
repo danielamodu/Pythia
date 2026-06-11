@@ -33,9 +33,15 @@ async function main() {
   const oracleArtifact = JSON.parse(fs.readFileSync(oracleArtifactPath, "utf8"));
   const oracleFactory = new ethers.ContractFactory(oracleArtifact.abi, oracleArtifact.bytecode.object, wallet);
   
+  const feeData = await provider.getFeeData();
+  const recommendedGasPrice = feeData.gasPrice || ethers.parseUnits("6", "gwei");
+  // Apply a 20% premium for fast inclusion (e.g. 6 gwei -> 7.2 gwei)
+  const gasPrice = (recommendedGasPrice * 120n) / 100n;
+  console.log(`\nFee Metrics: Recommended Gas Price = ${ethers.formatUnits(recommendedGasPrice, "gwei")} gwei, Using Gas Price (with premium) = ${ethers.formatUnits(gasPrice, "gwei")} gwei`);
+
   console.log(`\nStep 1: Deploying PythiaOracle with platform: ${SOMNIA_PLATFORM}...`);
   const oracle = await oracleFactory.deploy(SOMNIA_PLATFORM, {
-    gasPrice: ethers.parseUnits("15", "gwei") // higher gas for fast inclusion
+    gasPrice
   });
   const oracleTx = oracle.deploymentTransaction();
   console.log(`Transaction sent! Hash: ${oracleTx.hash}`);
@@ -54,7 +60,7 @@ async function main() {
   
   console.log(`\nStep 2: Deploying MarketFactory with oracle: ${oracleAddress}...`);
   const marketFactory = await factoryFactory.deploy(oracleAddress, treasury, {
-    gasPrice: ethers.parseUnits("15", "gwei")
+    gasPrice
   });
   const factoryTx = marketFactory.deploymentTransaction();
   console.log(`Transaction sent! Hash: ${factoryTx.hash}`);
@@ -65,7 +71,7 @@ async function main() {
   // 3. Link Oracle to Factory
   console.log(`\nStep 3: Linking PythiaOracle to MarketFactory...`);
   const linkTx = await oracle.setMarketFactory(marketFactoryAddress, {
-    gasPrice: ethers.parseUnits("15", "gwei")
+    gasPrice
   });
   console.log(`Transaction sent! Hash: ${linkTx.hash}`);
   await linkTx.wait();
